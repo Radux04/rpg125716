@@ -67,7 +67,16 @@ public class CombatService {
     }
 
     public CombatResult useItem(Player player, Item item) {
-        item.use(player);
+        boolean used = player.useItem(item);
+
+        if (!used) {
+            return new CombatResult(
+                    player.getName() + " non possiede " + item.getName(),
+                    0,
+                    combatFinished,
+                    winner
+            );
+        }
 
         return new CombatResult(
                 player.getName() + " usa " + item.getName(),
