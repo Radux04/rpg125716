@@ -1,9 +1,8 @@
 package it.unicam.cs.mpgc.rpg125716.model.character;
 
+import it.unicam.cs.mpgc.rpg125716.model.item.Inventory;
+import it.unicam.cs.mpgc.rpg125716.model.item.Item;
 import lombok.Data;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Data
 public class Player {
@@ -15,7 +14,7 @@ public class Player {
     private int attack;
     private int defense;
     private int gold;
-    private List<String> inventory;
+    private Inventory inventory;
 
     public Player(String name, int maxHp, int attack, int defense) {
         this.name = name;
@@ -26,7 +25,7 @@ public class Player {
         this.attack = attack;
         this.defense = defense;
         this.gold = 0;
-        this.inventory = new ArrayList<>();
+        this.inventory = new Inventory();
     }
 
     public void takeDamage(int damage) {
@@ -64,6 +63,18 @@ public class Player {
 
     public boolean isAlive() {
         return currentHp > 0;
+    }
+
+    public void collectItem(Item item) {
+        inventory.addItem(item);
+    }
+
+    public boolean removeItem(Item item) {
+        return inventory.removeItem(item);
+    }
+
+    public boolean useItem(Item item) {
+        return inventory.useItem(this, item);
     }
 
     private int experienceToNextLevel() {
