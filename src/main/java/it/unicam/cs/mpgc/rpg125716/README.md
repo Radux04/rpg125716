@@ -1,74 +1,121 @@
-# 📌 Nome del Progetto
+# RPG 125716: The Forgotten Gate
 
-Breve descrizione del progetto (2-3 righe):  
-Spiega cosa fa il programma e a cosa serve.
+Progetto Java per la modellazione delle entita principali di un semplice gioco RPG.
+
+Il progetto contiene:
+
+- `Player`, nel package `model.character`
+- `Enemy`, nel package `model.enemy`
+- nemici concreti: `Slime`, `Goblin`, `Skeleton`, `BossEnemy`
+
+Il codice usa Lombok per generare automaticamente `getter`, `setter`, `toString`, `equals` e `hashCode`.
 
 ---
 
-## 🚀 Come eseguire il progetto
+## Struttura Backend
 
-### Prerequisiti
-- Java 25 (LTS)
+### Player
+
+La classe `Player` rappresenta il personaggio controllato dal giocatore.
+
+Campi principali:
+
+- `name`
+- `level`
+- `experience`
+- `maxHp`
+- `currentHp`
+- `attack`
+- `defense`
+- `gold`
+- `inventory`
+
+Metodi principali:
+
+- `takeDamage(int damage)`
+- `heal(int amount)`
+- `gainExperience(int amount)`
+- `levelUp()`
+- `isAlive()`
+
+### Enemy
+
+`Enemy` e una classe astratta che rappresenta un nemico generico.
+
+Campi principali:
+
+- `name`
+- `hp`
+- `attack`
+- `defense`
+- `experienceReward`
+- `goldReward`
+
+Classi concrete disponibili:
+
+- `Slime`
+- `Goblin`
+- `Skeleton`
+- `BossEnemy`
+
+Ogni nemico concreto inizializza valori predefiniti per statistiche e ricompense.
+
+---
+
+## Tecnologie usate
+
+- Java 25
 - Gradle
+- Lombok
+- JUnit 5 per i test
 
-### Istruzioni
+---
 
-```bash
-git clone <url-del-repository>
-cd <nome-cartella>
-```
+## Prerequisiti
 
-### Build del progetto
+Per compilare il progetto e necessario usare una JVM compatibile con Gradle.
+
+Requisiti consigliati:
+
+- JDK 25, coerente con la configurazione del progetto
+- Gradle Wrapper incluso nel repository
+
+---
+
+## Build del progetto
+
+Da terminale, nella cartella principale del progetto:
+
 ```bash
 ./gradlew build
 ```
 
-### Esecuzione
+Su Windows:
+
+```bash
+gradlew.bat build
+```
+
+---
+
+## Esecuzione
+
+Il progetto contiene una classe `Main` iniziale.
+
+Quando sara configurato un task di esecuzione Gradle, il progetto potra essere avviato con:
+
 ```bash
 ./gradlew run
 ```
 
 ---
 
-## 🤖 Uso di strumenti di AI
+## Uso di strumenti di AI
 
-Indicare **se e come** sono stati utilizzati strumenti di AI (es. ChatGPT, Copilot, ecc.).
-Descrivere in modo chiaro **per quali attività** e **con quale livello di intervento personale**.
+Sono stati utilizzati strumenti di AI come supporto per:
 
-È importante dimostrare che:
-* il codice è stato **compreso**
-* l’AI è stata usata come **supporto**, non come sostituto
----
+- creare una prima struttura delle classi `Player` ed `Enemy`
+- configurare Lombok nel file Gradle
+- aggiornare la documentazione del progetto
 
-📌 Per una descrizione più dettagliata dell’uso dell’AI, utilizzare la **Wiki del repository**.
-
-
-### Esempi :
-
-* Utilizzato ChatGPT per:
-
-    * comprendere concetti teorici (es. differenza tra classi e oggetti)
-    * chiarire errori di compilazione
-    * suggerimenti su struttura del codice
-
-* Utilizzato Copilot per:
-
-    * autocompletamento di metodi semplici
-    * generazione di codice ripetitivo (es. getter/setter)
-
-* Utilizzato ChatGPT per generare una prima versione di una funzione, poi:
-
-    * modificata e adattata manualmente
-    * testata e corretta personalmente
-
----
-
-Oppure:
-- Non sono stati utilizzati strumenti di AI
-
----
-
-
-## ⚠️ Nota
-
-Questo è un template: **modificare e adattare tutte le parti necessarie** in base al proprio progetto
+Il codice prodotto è stato sempre letto, compreso, testato e adattato manualmente durante lo sviluppo.
