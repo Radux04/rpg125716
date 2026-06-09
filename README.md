@@ -8,14 +8,16 @@ Il progetto contiene:
 - `ElementType`, enum per la specializzazione elementale del player
 - `ElementalPower`, classe che rappresenta il superpotere legato all'elemento scelto
 - `AchievementType`, enum per gli achievement della demo
+- `Achievement`, stato persistente globale degli achievement
+- package `event` con eventi di gioco e dispatcher leggero
 - `Enemy`, nel package `model.enemy`
 - nemici concreti: `Slime`, `Goblin`, `Skeleton`, `BossEnemy`
 - `DemoLevel` e `DemoCampaign`, per la struttura dei 3 livelli della demo
-- `GameStateLog`, `LevelState`, `EnemyState`, `SaveSlot`, `SaveSlotInfo` e `SaveRepository`, nel package `persistence`, per il sistema di salvataggio
+- `GameStateLog`, `LevelState`, `EnemyState`, `SaveSlot`, `SaveSlotInfo`, `SaveRepository` e `AchievementRepository`, nel package `persistence`, per il sistema di salvataggio
 - oggetti di gioco base: `Potion`, `Weapon`, `Armor`, `KeyItem`
 - drop e reward concreti: `OriginStone`, `Helmet`, `BossSword`
 - inventario cumulabile tramite `Inventory`
-- servizi applicativi `CombatService`, `SaveService` e `LoadService`
+- servizi applicativi `CombatService`, `SaveService`, `LoadService` e `AchievementService`
 - `GameLoadController` e `GameController`, nel package `controller`, per la gestione ad alto livello della sessione runtime
 
 Il codice usa Lombok per generare automaticamente `getter`, `setter`, `toString`, `equals` e `hashCode`.
@@ -104,11 +106,54 @@ Per ottenere il potere corretto a partire da un elemento e disponibile il metodo
 
 La demo contiene i seguenti achievement:
 
-- `FIRST_KILL` -> nome mostrato: `first kill`
+- `FIRST_KILL` -> nome mostrato: `Primo sangue`
+- `BOSS_SLAYER` -> nome mostrato: `Boss Slayer`
+- `COLLECTOR` -> nome mostrato: `Collezionista`
 - `ORIGIN_STONE` -> nome mostrato: `Pietra dell'Origine`
 
 Il primo viene sbloccato alla prima uccisione di un nemico.
-Il secondo viene sbloccato quando il player usa la `Pietra dell'Origine` per ottenere il proprio elemento.
+Il secondo viene sbloccato quando il player sconfigge il suo primo boss.
+Il terzo viene sbloccato quando il player arriva ad avere almeno 10 oggetti raccolti.
+Il quarto viene sbloccato quando il player usa la `Pietra dell'Origine` per ottenere il proprio elemento.
+
+### Achievement
+
+La classe `Achievement` rappresenta lo stato persistente globale di un achievement.
+
+Campi principali:
+
+- `id`
+- `title`
+- `description`
+- `unlocked`
+- `unlockedAt`
+
+Gli achievement non vivono piu solo dentro il `GameStateLog` della singola run: vengono anche salvati globalmente nel file `achievements.json`.
+Questo evita di sbloccare di nuovo lo stesso achievement quando si inizia una nuova partita.
+
+### Eventi di gioco
+
+Il progetto espone un piccolo sistema di eventi nel package `event`, pensato per rendere il backend piu estendibile.
+
+Componenti principali:
+
+- `GameEvent`, interfaccia base
+- `GameEventListener`, interfaccia per i listener
+- `GameEventDispatcher`, dispatcher in-memory
+
+Eventi attualmente modellati:
+
+- `EnemyDefeatedEvent`
+- `LevelCompletedEvent`
+- `PlayerDiedEvent`
+- `ItemCollectedEvent`
+- `OriginStoneAttunedEvent`
+
+Idea progettuale:
+
+- i servizi e i controller emettono eventi quando succede qualcosa di rilevante
+- `AchievementService` ascolta questi eventi e decide se sbloccare un achievement
+- in questo modo aggiungere nuovi achievement non richiede di spargere logica in tutto il codice di gioco
 
 ### Enemy
 
@@ -161,6 +206,7 @@ Metodi principali di `Inventory`:
 - `removeItem(Item item)`
 - `useItem(Player player, Item item)`
 - `containsItem(Item item)`
+- `getTotalItemCount()`
 - `getItems()`
 
 ### DemoLevel e DemoCampaign
@@ -230,7 +276,12 @@ Classi principali:
 
 `CombatService` gestisce gli attacchi tra player e nemico e l'uso degli oggetti in combattimento.
 Non conosce JavaFX e non aggiorna direttamente la grafica: restituisce sempre oggetti risultato.
-Quando il player sconfigge il suo primo nemico, sblocca automaticamente l'achievement `first kill`.
+Quando succede qualcosa di rilevante nel combattimento, `CombatService` emette eventi di gioco:
+
+- `EnemyDefeatedEvent` quando il player sconfigge un nemico
+- `PlayerDiedEvent` quando il player viene sconfitto
+
+`AchievementService` ascolta questi eventi e puo sbloccare automaticamente `Primo sangue` e `Boss Slayer`.
 
 Esempio:
 
@@ -285,6 +336,31 @@ Durante il caricamento:
 - viene ricostruita una `DemoCampaign`
 - i livelli precedenti a quello corrente vengono marcati come completati
 - il livello corrente viene ripristinato dal `LevelState` salvato
+- gli achievement globali vengono sincronizzati con quelli presenti nel `Player` caricato
+
+### AchievementService
+
+Il package `service` contiene anche `AchievementService`, che gestisce la persistenza globale degli achievement.
+
+Metodi principali:
+
+- `unlockAchievement(String achievementId)`
+- `unlockAchievement(AchievementType achievementType)`
+- `unlockAchievement(Player player, AchievementType achievementType)`
+- `onGameEvent(GameEvent gameEvent)`
+- `isUnlocked(String achievementId)`
+- `isUnlocked(AchievementType achievementType)`
+- `getUnlockedAchievements()`
+- `getAllAchievements()`
+- `synchronizePlayerAchievements(Player player)`
+
+Scelta progettuale:
+
+- il file globale usato di default e `achievements.json`
+- il servizio parte sempre dalle definizioni note in `AchievementType`
+- se carichi un vecchio save con achievement solo locali nel `Player`, `synchronizePlayerAchievements(...)` li porta anche nel registro globale
+- se invece esistono achievement globali gia sbloccati, questi vengono rimessi nel `Player` caricato o nella nuova run
+- i nuovi achievement gameplay vengono sbloccati soprattutto tramite eventi, non con logica distribuita nei modelli
 
 ### GameLoadController
 
@@ -311,7 +387,14 @@ Metodi principali:
 - `listSaveSlots()`
 - `loadGame(SaveSlot saveSlot)`
 - `saveCurrentGame(SaveSlot saveSlot)`
+- `attuneCurrentPlayerToOriginStone(ElementType elementType)`
+- `collectItemForCurrentPlayer(Item item)`
+- `claimCurrentLevelCompletionDrop()`
+- `chooseCurrentLevelReward(LevelRewardChoice rewardChoice)`
+- `publishCurrentLevelCompleted()`
+- `publishCurrentPlayerDied()`
 - `deleteSave(SaveSlot saveSlot)`
+- `getAllAchievements()`
 - `getCurrentSession()`
 - `requireCurrentSession()`
 - `clearCurrentSession()`
@@ -322,9 +405,11 @@ Quando salva la sessione corrente:
 - costruisce un nuovo `GameStateLog`
 - aggiorna la sessione corrente con il nuovo slot e il nuovo source save
 
+Inoltre, `GameController` espone anche entry point che emettono eventi di raccolta item, completamento livello, morte del player e sintonia con la `Pietra dell'Origine`, cosi la UI o il game loop possono usare un backend gia pronto per logica estendibile basata su eventi.
+
 ### Persistence
 
-Il package `persistence` contiene `GameStateLog`, `LevelState`, `EnemyState`, `InventoryEntryState`, `SaveSlot`, `SaveSlotInfo`, `SaveRepository` e `XmlSaveRepository`.
+Il package `persistence` contiene `GameStateLog`, `LevelState`, `EnemyState`, `InventoryEntryState`, `SaveSlot`, `SaveSlotInfo`, `SaveRepository`, `XmlSaveRepository` e `AchievementRepository`.
 
 Il sistema supporta 3 slot fissi:
 
@@ -394,6 +479,12 @@ Scelta progettuale del save:
 - se il player salva durante un combattimento o comunque durante un livello non ancora completato, al caricamento quel livello riparte dall'inizio
 - per questo `currentLevelState` salva il punto di restart del livello, non il frame esatto del combattimento in corso
 - se invece il livello corrente e gia completato, il save mantiene quello stato completato
+
+Persistenza globale degli achievement:
+
+- il file globale usato di default e `achievements.json`
+- il file e separato dagli slot `saves/slot-1.xml`, `saves/slot-2.xml`, `saves/slot-3.xml`
+- gli achievement quindi restano disponibili anche iniziando una nuova partita o caricando un'altra run
 
 ---
 

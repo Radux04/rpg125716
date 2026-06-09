@@ -95,7 +95,6 @@ public class Player {
         }
 
         chooseElement(elementType);
-        unlockAchievement(AchievementType.ORIGIN_STONE);
     }
 
     public void takeDamage(int damage) {
