@@ -41,6 +41,14 @@ public class DemoCampaign {
         return levels.get(currentLevelIndex);
     }
 
+    public DemoLevel getLevel(int levelNumber) {
+        if (levelNumber <= 0 || levelNumber > levels.size()) {
+            throw new IllegalArgumentException("unsupported level number: " + levelNumber);
+        }
+
+        return levels.get(levelNumber - 1);
+    }
+
     public boolean hasNextLevel() {
         return currentLevelIndex < levels.size() - 1;
     }
@@ -60,6 +68,15 @@ public class DemoCampaign {
 
     public boolean isDemoCompleted() {
         return currentLevelIndex == levels.size() - 1 && getCurrentLevel().isCompleted();
+    }
+
+    public DemoLevel moveToLevel(int levelNumber) {
+        if (levelNumber <= 0 || levelNumber > levels.size()) {
+            throw new IllegalArgumentException("unsupported level number: " + levelNumber);
+        }
+
+        currentLevelIndex = levelNumber - 1;
+        return getCurrentLevel();
     }
 
     private static DemoLevel createLevel1() {
