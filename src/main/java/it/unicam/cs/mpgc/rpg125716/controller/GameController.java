@@ -1,10 +1,14 @@
 package it.unicam.cs.mpgc.rpg125716.controller;
 
+import it.unicam.cs.mpgc.rpg125716.model.character.ElementType;
 import it.unicam.cs.mpgc.rpg125716.model.level.DemoCampaign;
 import it.unicam.cs.mpgc.rpg125716.model.level.DemoLevel;
+import it.unicam.cs.mpgc.rpg125716.model.progression.Achievement;
+import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 import it.unicam.cs.mpgc.rpg125716.persistence.GameStateLog;
 import it.unicam.cs.mpgc.rpg125716.persistence.SaveSlot;
 import it.unicam.cs.mpgc.rpg125716.persistence.SaveSlotInfo;
+import it.unicam.cs.mpgc.rpg125716.service.AchievementService;
 import it.unicam.cs.mpgc.rpg125716.service.LoadService;
 import it.unicam.cs.mpgc.rpg125716.service.LoadedGameSession;
 import it.unicam.cs.mpgc.rpg125716.service.SaveService;
@@ -17,15 +21,25 @@ import java.util.Optional;
 public class GameController {
     private final SaveService saveService;
     private final LoadService loadService;
+    private final AchievementService achievementService;
     private LoadedGameSession currentSession;
 
     public GameController() {
-        this(new SaveService(), new LoadService());
+        this(new SaveService(), new AchievementService());
+    }
+
+    public GameController(SaveService saveService, AchievementService achievementService) {
+        this(saveService, new LoadService(saveService, achievementService), achievementService);
     }
 
     public GameController(SaveService saveService, LoadService loadService) {
+        this(saveService, loadService, new AchievementService());
+    }
+
+    public GameController(SaveService saveService, LoadService loadService, AchievementService achievementService) {
         this.saveService = Objects.requireNonNull(saveService, "saveService cannot be null");
         this.loadService = Objects.requireNonNull(loadService, "loadService cannot be null");
+        this.achievementService = Objects.requireNonNull(achievementService, "achievementService cannot be null");
     }
 
     public List<SaveSlotInfo> listSaveSlots() {
@@ -64,8 +78,20 @@ public class GameController {
         return GameStateLog.copyOf(gameStateLog);
     }
 
+    public void attuneCurrentPlayerToOriginStone(ElementType elementType) {
+        Objects.requireNonNull(elementType, "elementType cannot be null");
+
+        LoadedGameSession session = requireCurrentSession();
+        session.getPlayer().attuneToOriginStone(elementType);
+        achievementService.unlockAchievement(session.getPlayer(), AchievementType.ORIGIN_STONE);
+    }
+
     public boolean deleteSave(SaveSlot saveSlot) {
         return saveService.deleteSave(saveSlot);
+    }
+
+    public List<Achievement> getAllAchievements() {
+        return achievementService.getAllAchievements();
     }
 
     public Optional<LoadedGameSession> getCurrentSession() {

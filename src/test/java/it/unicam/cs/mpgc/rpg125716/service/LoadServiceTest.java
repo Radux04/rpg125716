@@ -3,6 +3,8 @@ package it.unicam.cs.mpgc.rpg125716.service;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
 import it.unicam.cs.mpgc.rpg125716.model.item.Potion;
 import it.unicam.cs.mpgc.rpg125716.model.level.DemoCampaign;
+import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
+import it.unicam.cs.mpgc.rpg125716.persistence.AchievementRepository;
 import it.unicam.cs.mpgc.rpg125716.persistence.GameStateLog;
 import it.unicam.cs.mpgc.rpg125716.persistence.SaveSlot;
 import it.unicam.cs.mpgc.rpg125716.persistence.XmlSaveRepository;
@@ -24,7 +26,10 @@ class LoadServiceTest {
     void loadServiceRebuildsPlayerAndCampaignFromSavedSlot() {
         XmlSaveRepository repository = new XmlSaveRepository(tempDir);
         SaveService saveService = new SaveService(repository);
-        LoadService loadService = new LoadService(saveService);
+        AchievementService achievementService = new AchievementService(
+                new AchievementRepository(tempDir.resolve("achievements.json"))
+        );
+        LoadService loadService = new LoadService(saveService, achievementService);
 
         Player player = new Player("Hero", 60, 10, 5, 8);
         player.collectItem(new Potion());
@@ -53,7 +58,10 @@ class LoadServiceTest {
     void loadServiceKeepsCompletedCurrentLevelWhenSaveWasCreatedAfterCompletion() {
         XmlSaveRepository repository = new XmlSaveRepository(tempDir);
         SaveService saveService = new SaveService(repository);
-        LoadService loadService = new LoadService(saveService);
+        AchievementService achievementService = new AchievementService(
+                new AchievementRepository(tempDir.resolve("achievements.json"))
+        );
+        LoadService loadService = new LoadService(saveService, achievementService);
 
         Player player = new Player("Hero", 60, 10, 5, 8);
         DemoCampaign campaign = new DemoCampaign();
@@ -68,5 +76,25 @@ class LoadServiceTest {
 
         assertEquals(1, loadedGameSession.getCampaign().getCurrentLevel().getNumber());
         assertTrue(loadedGameSession.getCampaign().getCurrentLevel().isCompleted());
+    }
+
+    @Test
+    void loadServiceSynchronizesGlobalAchievementsIntoTheLoadedPlayer() {
+        XmlSaveRepository repository = new XmlSaveRepository(tempDir.resolve("saves"));
+        SaveService saveService = new SaveService(repository);
+        AchievementService achievementService = new AchievementService(
+                new AchievementRepository(tempDir.resolve("achievements.json"))
+        );
+        LoadService loadService = new LoadService(saveService, achievementService);
+
+        achievementService.unlockAchievement(AchievementType.FIRST_KILL);
+        saveService.saveGame(
+                GameStateLog.fromCurrentGame(1, new Player("Hero", 60, 10, 5, 8), new DemoCampaign(), List.of()),
+                SaveSlot.SLOT_1
+        );
+
+        LoadedGameSession loadedGameSession = loadService.requireLoadedSession(SaveSlot.SLOT_1);
+
+        assertTrue(loadedGameSession.getPlayer().hasAchievement(AchievementType.FIRST_KILL));
     }
 }

@@ -12,13 +12,19 @@ import java.util.Optional;
 
 public class LoadService {
     private final SaveService saveService;
+    private final AchievementService achievementService;
 
     public LoadService() {
-        this(new SaveService());
+        this(new SaveService(), new AchievementService());
     }
 
     public LoadService(SaveService saveService) {
+        this(saveService, new AchievementService());
+    }
+
+    public LoadService(SaveService saveService, AchievementService achievementService) {
         this.saveService = Objects.requireNonNull(saveService, "saveService cannot be null");
+        this.achievementService = Objects.requireNonNull(achievementService, "achievementService cannot be null");
     }
 
     public Optional<LoadedGameSession> loadFromSlot(SaveSlot saveSlot) {
@@ -38,6 +44,7 @@ public class LoadService {
         gameStateLog.validate();
 
         Player player = new Player(gameStateLog.getPlayer());
+        achievementService.synchronizePlayerAchievements(player);
         DemoCampaign campaign = rebuildCampaign(gameStateLog);
 
         return new LoadedGameSession(
