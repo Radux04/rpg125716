@@ -2,7 +2,14 @@ package it.unicam.cs.mpgc.rpg125716.model.character;
 
 import it.unicam.cs.mpgc.rpg125716.model.item.Inventory;
 import it.unicam.cs.mpgc.rpg125716.model.item.Item;
+import it.unicam.cs.mpgc.rpg125716.model.item.OriginStone;
+import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 import lombok.Data;
+
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
 
 @Data
 public class Player {
@@ -14,9 +21,13 @@ public class Player {
     private int attack;
     private int defense;
     private int gold;
+    private int speed;
     private Inventory inventory;
+    private ElementType elementType;
+    private ElementalPower elementalPower;
+    private final Set<AchievementType> unlockedAchievements;
 
-    public Player(String name, int maxHp, int attack, int defense) {
+    public Player(String name, int maxHp, int attack, int defense, int speed) {
         this.name = name;
         this.level = 1;
         this.experience = 0;
@@ -25,7 +36,44 @@ public class Player {
         this.attack = attack;
         this.defense = defense;
         this.gold = 0;
+        this.speed = speed;
         this.inventory = new Inventory();
+        this.unlockedAchievements = new LinkedHashSet<>();
+    }
+
+    public void chooseElement(ElementType elementType) {
+        if (this.elementType != null) {
+            throw new IllegalStateException("the player has already chosen an element");
+        }
+
+        this.elementType = Objects.requireNonNull(elementType, "elementType cannot be null");
+        this.elementalPower = ElementalPower.fromElementType(elementType);
+
+        switch (elementType) {
+            case FIRE -> {
+                this.attack += 8;
+                this.speed += 5;
+            }
+            case WATER -> {
+                this.maxHp += 25;
+                this.currentHp += 25;
+                this.speed += 5;
+            }
+            case WIND -> this.speed += 20;
+            case EARTH -> {
+                this.defense += 5;
+                this.attack += 2;
+            }
+        }
+    }
+
+    public void attuneToOriginStone(ElementType elementType) {
+        if (!inventory.containsItem(new OriginStone())) {
+            throw new IllegalStateException("the player does not possess the Pietra dell'Origine");
+        }
+
+        chooseElement(elementType);
+        unlockAchievement(AchievementType.ORIGIN_STONE);
     }
 
     public void takeDamage(int damage) {
@@ -75,6 +123,18 @@ public class Player {
 
     public boolean useItem(Item item) {
         return inventory.useItem(this, item);
+    }
+
+    public boolean unlockAchievement(AchievementType achievementType) {
+        return unlockedAchievements.add(Objects.requireNonNull(achievementType, "achievementType cannot be null"));
+    }
+
+    public boolean hasAchievement(AchievementType achievementType) {
+        return unlockedAchievements.contains(Objects.requireNonNull(achievementType, "achievementType cannot be null"));
+    }
+
+    public Set<AchievementType> getUnlockedAchievements() {
+        return Collections.unmodifiableSet(unlockedAchievements);
     }
 
     private int experienceToNextLevel() {

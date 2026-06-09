@@ -5,9 +5,14 @@ Progetto Java per la modellazione delle entita principali di un semplice gioco R
 Il progetto contiene:
 
 - `Player`, nel package `model.character`
+- `ElementType`, enum per la specializzazione elementale del player
+- `ElementalPower`, classe che rappresenta il superpotere legato all'elemento scelto
+- `AchievementType`, enum per gli achievement della demo
 - `Enemy`, nel package `model.enemy`
 - nemici concreti: `Slime`, `Goblin`, `Skeleton`, `BossEnemy`
-- oggetti di gioco: `Potion`, `Weapon`, `Armor`, `KeyItem`
+- `DemoLevel` e `DemoCampaign`, per la struttura dei 3 livelli della demo
+- oggetti di gioco base: `Potion`, `Weapon`, `Armor`, `KeyItem`
+- drop e reward concreti: `OriginStone`, `Helmet`, `BossSword`
 - inventario cumulabile tramite `Inventory`
 - servizio di combattimento tramite `CombatService`
 
@@ -31,10 +36,16 @@ Campi principali:
 - `attack`
 - `defense`
 - `gold`
+- `speed`
+- `elementType`
+- `elementalPower`
+- `unlockedAchievements`
 - `inventory`
 
 Metodi principali:
 
+- `chooseElement(ElementType elementType)`
+- `attuneToOriginStone(ElementType elementType)`
 - `takeDamage(int damage)`
 - `heal(int amount)`
 - `gainExperience(int amount)`
@@ -43,6 +54,59 @@ Metodi principali:
 - `collectItem(Item item)`
 - `removeItem(Item item)`
 - `useItem(Item item)`
+- `unlockAchievement(AchievementType achievementType)`
+- `hasAchievement(AchievementType achievementType)`
+
+`chooseElement(...)` puo essere usato una sola volta: il player sceglie un unico elemento e ottiene il relativo bonus statistico.
+
+### ElementType
+
+L'enum `ElementType` definisce l'elemento scelto dal player:
+
+- `FIRE`
+- `WATER`
+- `WIND`
+- `EARTH`
+
+La scelta viene applicata tramite `chooseElement(...)`, che modifica le statistiche del player nel seguente modo:
+
+- `FIRE`: `attack +8`, `speed +5`
+- `WATER`: `maxHp +25`, `currentHp +25`, `speed +5`
+- `WIND`: `speed +20`
+- `EARTH`: `defense +5`, `attack +2`
+
+Inoltre, `chooseElement(...)` assegna automaticamente anche un `ElementalPower` coerente con l'elemento selezionato.
+
+### ElementalPower
+
+La classe `ElementalPower` rappresenta il superpotere elementale del player.
+
+Campi principali:
+
+- `elementType`
+- `name`
+- `description`
+
+Poteri associati:
+
+- `FIRE`: `Fiamma Primordiale` -> aumenta il danno degli attacchi
+- `WATER`: `Cura Fluente` -> permette al giocatore di recuperare punti vita
+- `WIND`: `Passo del Vento` -> aumenta la possibilita di evitare gli attacchi
+- `EARTH`: `Pelle di Roccia` -> aumenta la difesa del giocatore
+
+Per ottenere il potere corretto a partire da un elemento e disponibile il metodo:
+
+- `ElementalPower.fromElementType(ElementType elementType)`
+
+### AchievementType
+
+La demo contiene i seguenti achievement:
+
+- `FIRST_KILL` -> nome mostrato: `first kill`
+- `ORIGIN_STONE` -> nome mostrato: `Pietra dell'Origine`
+
+Il primo viene sbloccato alla prima uccisione di un nemico.
+Il secondo viene sbloccato quando il player usa la `Pietra dell'Origine` per ottenere il proprio elemento.
 
 ### Enemy
 
@@ -56,6 +120,8 @@ Campi principali:
 - `defense`
 - `experienceReward`
 - `goldReward`
+- `detectionRange`
+- `chasesPlayerWhenDetected`
 
 Classi concrete disponibili:
 
@@ -65,6 +131,7 @@ Classi concrete disponibili:
 - `BossEnemy`
 
 Ogni nemico concreto inizializza valori predefiniti per statistiche e ricompense.
+I nemici possono anche rilevare il player tramite `detectionRange` e decidere se inseguirlo con `shouldChasePlayer(int distanceFromPlayer)`.
 
 ### Item e Inventory
 
@@ -79,6 +146,9 @@ Classi principali:
 - `Weapon`, oggetto non consumabile che aumenta l'attacco
 - `Armor`, oggetto non consumabile che aumenta la difesa
 - `KeyItem`, oggetto chiave non consumabile
+- `OriginStone`, drop del primo livello
+- `Helmet`, ricompensa del secondo livello con `+2` difesa
+- `BossSword`, drop del boss finale con molto attacco aggiuntivo
 
 L'inventario usa una struttura `Map<Item, Integer>`, quindi piu oggetti uguali vengono salvati come quantita.
 
@@ -87,7 +157,63 @@ Metodi principali di `Inventory`:
 - `addItem(Item item)`
 - `removeItem(Item item)`
 - `useItem(Player player, Item item)`
+- `containsItem(Item item)`
 - `getItems()`
+
+### DemoLevel e DemoCampaign
+
+La progressione della demo e modellata tramite `DemoCampaign`, che contiene tre `DemoLevel` sequenziali.
+
+Campi principali di `DemoLevel`:
+
+- `number`
+- `name`
+- `description`
+- `tutorial`
+- `bossFight`
+- `unlocksElementChoice`
+- `endsDemoWithVictory`
+- `enemies`
+- `completionDrop`
+- `rewardChoices`
+
+Metodi principali di `DemoLevel`:
+
+- `isCompleted()`
+- `getRemainingEnemies()`
+- `grantCompletionDrop(Player player)`
+- `chooseReward(Player player, LevelRewardChoice rewardChoice)`
+
+Le ricompense selezionabili del secondo livello sono rappresentate dall'enum `LevelRewardChoice`:
+
+- `HEALING_POTION`
+- `DEFENSE_HELMET`
+
+### Struttura della demo
+
+#### Livello 1
+
+- 1 solo nemico
+- serve da tutorial
+- alla sconfitta del nemico droppa la `Pietra dell'Origine`
+- dopo il drop il player sceglie uno tra `FIRE`, `WATER`, `WIND`, `EARTH`
+
+#### Livello 2
+
+- almeno 2 nemici
+- i nemici inseguono il player quando entra nel loro raggio di rilevamento
+- i nemici sconfitti danno XP tramite `CombatService`
+- quando tutti i nemici sono sconfitti il player sceglie una ricompensa:
+- `HEALING_POTION` -> una pozione curativa
+- `DEFENSE_HELMET` -> un elmo con `+2` difesa
+
+#### Livello 3
+
+- bossfight finale
+- il boss e piu forte dei nemici normali
+- alla sconfitta droppa una `BossSword`
+- la spada viene aggiunta all'inventario
+- la demo termina con la vittoria
 
 ### CombatService
 
@@ -101,6 +227,7 @@ Classi principali:
 
 `CombatService` gestisce gli attacchi tra player e nemico e l'uso degli oggetti in combattimento.
 Non conosce JavaFX e non aggiorna direttamente la grafica: restituisce sempre oggetti risultato.
+Quando il player sconfigge il suo primo nemico, sblocca automaticamente l'achievement `first kill`.
 
 Esempio:
 
@@ -159,6 +286,22 @@ gradlew.bat build
 
 ---
 
+## Test
+
+Per eseguire i test:
+
+```bash
+./gradlew test
+```
+
+Su Windows:
+
+```bash
+gradlew.bat test
+```
+
+---
+
 ## Esecuzione
 
 Il progetto contiene una classe `Main` iniziale.
@@ -179,6 +322,7 @@ Sono stati utilizzati strumenti di AI come supporto per:
 - creare il servizio di combattimento separato dalla UI
 - creare il sistema di item e inventario cumulabile
 - configurare Lombok nel file Gradle
+- modellare la progressione demo con livelli, achievement, drop e ricompense
 - aggiornare la documentazione del progetto
 
 Il codice prodotto e stato sempre letto, compreso, testato e adattato manualmente durante lo sviluppo.
