@@ -1,5 +1,12 @@
 package it.unicam.cs.mpgc.rpg125716.service;
 
+import it.unicam.cs.mpgc.rpg125716.event.EnemyDefeatedEvent;
+import it.unicam.cs.mpgc.rpg125716.event.GameEvent;
+import it.unicam.cs.mpgc.rpg125716.event.GameEventListener;
+import it.unicam.cs.mpgc.rpg125716.event.ItemCollectedEvent;
+import it.unicam.cs.mpgc.rpg125716.event.LevelCompletedEvent;
+import it.unicam.cs.mpgc.rpg125716.event.OriginStoneAttunedEvent;
+import it.unicam.cs.mpgc.rpg125716.event.PlayerDiedEvent;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
 import it.unicam.cs.mpgc.rpg125716.model.progression.Achievement;
 import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
@@ -13,7 +20,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class AchievementService {
+public class AchievementService implements GameEventListener {
+    public static final int COLLECTOR_TARGET = 10;
+
     private final AchievementRepository achievementRepository;
 
     public AchievementService() {
@@ -72,6 +81,26 @@ public class AchievementService {
                 .toList();
     }
 
+    @Override
+    public void onGameEvent(GameEvent gameEvent) {
+        Objects.requireNonNull(gameEvent, "gameEvent cannot be null");
+
+        switch (gameEvent) {
+            case EnemyDefeatedEvent enemyDefeatedEvent -> handleEnemyDefeated(enemyDefeatedEvent);
+            case ItemCollectedEvent itemCollectedEvent -> handleItemCollected(itemCollectedEvent);
+            case OriginStoneAttunedEvent originStoneAttunedEvent -> unlockAchievement(
+                    originStoneAttunedEvent.player(),
+                    AchievementType.ORIGIN_STONE
+            );
+            case LevelCompletedEvent ignored -> {
+            }
+            case PlayerDiedEvent ignored -> {
+            }
+            default -> {
+            }
+        }
+    }
+
     public void synchronizePlayerAchievements(Player player) {
         Objects.requireNonNull(player, "player cannot be null");
 
@@ -114,5 +143,19 @@ public class AchievementService {
         }
 
         return achievement;
+    }
+
+    private void handleEnemyDefeated(EnemyDefeatedEvent enemyDefeatedEvent) {
+        unlockAchievement(enemyDefeatedEvent.player(), AchievementType.FIRST_KILL);
+
+        if (enemyDefeatedEvent.isBossDefeat()) {
+            unlockAchievement(enemyDefeatedEvent.player(), AchievementType.BOSS_SLAYER);
+        }
+    }
+
+    private void handleItemCollected(ItemCollectedEvent itemCollectedEvent) {
+        if (itemCollectedEvent.totalCollectedItems() >= COLLECTOR_TARGET) {
+            unlockAchievement(itemCollectedEvent.player(), AchievementType.COLLECTOR);
+        }
     }
 }

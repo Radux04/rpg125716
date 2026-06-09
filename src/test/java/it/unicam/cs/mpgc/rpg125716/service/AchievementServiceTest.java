@@ -1,6 +1,11 @@
 package it.unicam.cs.mpgc.rpg125716.service;
 
+import it.unicam.cs.mpgc.rpg125716.event.EnemyDefeatedEvent;
+import it.unicam.cs.mpgc.rpg125716.event.ItemCollectedEvent;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
+import it.unicam.cs.mpgc.rpg125716.model.enemy.BossEnemy;
+import it.unicam.cs.mpgc.rpg125716.model.enemy.Slime;
+import it.unicam.cs.mpgc.rpg125716.model.item.Potion;
 import it.unicam.cs.mpgc.rpg125716.model.progression.Achievement;
 import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 import it.unicam.cs.mpgc.rpg125716.persistence.AchievementRepository;
@@ -25,16 +30,41 @@ class AchievementServiceTest {
         AchievementService achievementService = new AchievementService(
                 new AchievementRepository(tempDir.resolve("achievements.json"))
         );
+        Player player = new Player("Hero", 60, 10, 5, 8);
 
-        Achievement firstUnlock = achievementService.unlockAchievement(AchievementType.FIRST_KILL);
+        achievementService.onGameEvent(new EnemyDefeatedEvent(player, new Slime()));
+        Achievement firstUnlock = achievementService.getUnlockedAchievements().getFirst();
         LocalDateTime unlockedAt = firstUnlock.getUnlockedAt();
-        Achievement secondUnlock = achievementService.unlockAchievement(AchievementType.FIRST_KILL);
+        achievementService.onGameEvent(new EnemyDefeatedEvent(player, new Slime()));
 
         assertTrue(firstUnlock.isUnlocked());
         assertNotNull(unlockedAt);
-        assertEquals(unlockedAt, secondUnlock.getUnlockedAt());
+        assertEquals(unlockedAt, achievementService.getUnlockedAchievements().getFirst().getUnlockedAt());
+        assertTrue(player.hasAchievement(AchievementType.FIRST_KILL));
         assertTrue(achievementService.isUnlocked(AchievementType.FIRST_KILL));
         assertEquals(1, achievementService.getUnlockedAchievements().size());
+    }
+
+    @Test
+    void achievementServiceUnlocksBossSlayerAndCollectorFromEvents() {
+        AchievementService achievementService = new AchievementService(
+                new AchievementRepository(tempDir.resolve("event-achievements.json"))
+        );
+        Player player = new Player("Hero", 60, 10, 5, 8);
+
+        achievementService.onGameEvent(new EnemyDefeatedEvent(player, new BossEnemy()));
+
+        for (int i = 0; i < AchievementService.COLLECTOR_TARGET; i++) {
+            player.collectItem(new Potion());
+            achievementService.onGameEvent(
+                    new ItemCollectedEvent(player, new Potion(), player.getInventory().getTotalItemCount())
+            );
+        }
+
+        assertTrue(player.hasAchievement(AchievementType.FIRST_KILL));
+        assertTrue(player.hasAchievement(AchievementType.BOSS_SLAYER));
+        assertTrue(player.hasAchievement(AchievementType.COLLECTOR));
+        assertEquals(3, achievementService.getUnlockedAchievements().size());
     }
 
     @Test

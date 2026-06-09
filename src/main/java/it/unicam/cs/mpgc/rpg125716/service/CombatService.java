@@ -1,21 +1,29 @@
 package it.unicam.cs.mpgc.rpg125716.service;
 
+import it.unicam.cs.mpgc.rpg125716.event.EnemyDefeatedEvent;
+import it.unicam.cs.mpgc.rpg125716.event.GameEventDispatcher;
+import it.unicam.cs.mpgc.rpg125716.event.PlayerDiedEvent;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Enemy;
 import it.unicam.cs.mpgc.rpg125716.model.item.Item;
-import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
+
+import java.util.Objects;
 
 public class CombatService {
-    private final AchievementService achievementService;
+    private final GameEventDispatcher gameEventDispatcher;
     private boolean combatFinished;
     private CombatWinner winner = CombatWinner.NONE;
 
     public CombatService() {
-        this(new AchievementService());
+        this(createDefaultDispatcher());
     }
 
     public CombatService(AchievementService achievementService) {
-        this.achievementService = achievementService;
+        this(new GameEventDispatcher().registerListener(Objects.requireNonNull(achievementService, "achievementService cannot be null")));
+    }
+
+    public CombatService(GameEventDispatcher gameEventDispatcher) {
+        this.gameEventDispatcher = Objects.requireNonNull(gameEventDispatcher, "gameEventDispatcher cannot be null");
     }
 
     public CombatResult playerAttack(Player player, Enemy enemy) {
@@ -33,7 +41,7 @@ public class CombatService {
         if (enemy.getHp() == 0) {
             player.gainExperience(enemy.getExperienceReward());
             player.setGold(player.getGold() + enemy.getGoldReward());
-            achievementService.unlockAchievement(player, AchievementType.FIRST_KILL);
+            gameEventDispatcher.dispatch(new EnemyDefeatedEvent(player, enemy));
             finishCombat(CombatWinner.PLAYER);
 
             return new CombatResult(
@@ -59,6 +67,7 @@ public class CombatService {
         int damage = previousHp - player.getCurrentHp();
 
         if (!player.isAlive()) {
+            gameEventDispatcher.dispatch(new PlayerDiedEvent(player));
             finishCombat(CombatWinner.ENEMY);
 
             return new CombatResult(
@@ -117,5 +126,9 @@ public class CombatService {
     private void finishCombat(CombatWinner winner) {
         this.combatFinished = true;
         this.winner = winner;
+    }
+
+    private static GameEventDispatcher createDefaultDispatcher() {
+        return new GameEventDispatcher().registerListener(new AchievementService());
     }
 }

@@ -1,6 +1,7 @@
 package it.unicam.cs.mpgc.rpg125716.service;
 
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
+import it.unicam.cs.mpgc.rpg125716.model.enemy.BossEnemy;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Slime;
 import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 import it.unicam.cs.mpgc.rpg125716.persistence.AchievementRepository;
@@ -31,5 +32,22 @@ class CombatServiceTest {
         assertEquals(CombatWinner.PLAYER, result.getWinner());
         assertTrue(player.hasAchievement(AchievementType.FIRST_KILL));
         assertTrue(achievementService.isUnlocked(AchievementType.FIRST_KILL));
+    }
+
+    @Test
+    void defeatingABossUnlocksBossSlayerAchievement() {
+        Player player = new Player("Hero", 60, 30, 5, 8);
+        BossEnemy bossEnemy = new BossEnemy();
+        AchievementService achievementService = new AchievementService(
+                new AchievementRepository(tempDir.resolve("boss-achievements.json"))
+        );
+        CombatService combatService = new CombatService(achievementService);
+
+        while (bossEnemy.isAlive()) {
+            combatService.playerAttack(player, bossEnemy);
+        }
+
+        assertTrue(player.hasAchievement(AchievementType.BOSS_SLAYER));
+        assertTrue(achievementService.isUnlocked(AchievementType.BOSS_SLAYER));
     }
 }

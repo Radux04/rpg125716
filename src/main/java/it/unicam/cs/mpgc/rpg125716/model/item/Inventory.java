@@ -64,6 +64,13 @@ public class Inventory {
     }
 
     @JsonIgnore
+    public int getTotalItemCount() {
+        return items.values().stream()
+                .mapToInt(Integer::intValue)
+                .sum();
+    }
+
+    @JsonIgnore
     public Map<Item, Integer> getItems() {
         return Collections.unmodifiableMap(items);
     }
