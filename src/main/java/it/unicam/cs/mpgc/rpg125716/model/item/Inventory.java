@@ -6,10 +6,19 @@ import lombok.ToString;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @ToString
 public class Inventory {
     private final Map<Item, Integer> items = new LinkedHashMap<>();
+
+    public Inventory() {
+    }
+
+    public Inventory(Inventory other) {
+        Objects.requireNonNull(other, "other cannot be null");
+        this.items.putAll(other.items);
+    }
 
     public void addItem(Item item) {
         items.merge(item, 1, Integer::sum);
