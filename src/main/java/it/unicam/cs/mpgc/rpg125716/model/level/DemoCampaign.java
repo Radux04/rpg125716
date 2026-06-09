@@ -22,10 +22,19 @@ public class DemoCampaign {
 
     public DemoCampaign() {
         this.levels = List.of(
-                createLevel1(),
-                createLevel2(),
-                createLevel3()
+                createFreshLevel(1),
+                createFreshLevel(2),
+                createFreshLevel(3)
         );
+    }
+
+    public static DemoLevel createFreshLevel(int levelNumber) {
+        return switch (levelNumber) {
+            case 1 -> createLevel1();
+            case 2 -> createLevel2();
+            case 3 -> createLevel3();
+            default -> throw new IllegalArgumentException("unsupported level number: " + levelNumber);
+        };
     }
 
     public DemoLevel getCurrentLevel() {
@@ -53,7 +62,7 @@ public class DemoCampaign {
         return currentLevelIndex == levels.size() - 1 && getCurrentLevel().isCompleted();
     }
 
-    private DemoLevel createLevel1() {
+    private static DemoLevel createLevel1() {
         return new DemoLevel(
                 1,
                 "Livello 1 - Tutorial",
@@ -68,7 +77,7 @@ public class DemoCampaign {
         );
     }
 
-    private DemoLevel createLevel2() {
+    private static DemoLevel createLevel2() {
         Goblin goblin = new Goblin();
         goblin.setDetectionRange(4);
         goblin.setChasesPlayerWhenDetected(true);
@@ -101,7 +110,7 @@ public class DemoCampaign {
         );
     }
 
-    private DemoLevel createLevel3() {
+    private static DemoLevel createLevel3() {
         BossEnemy bossEnemy = new BossEnemy();
         bossEnemy.setDetectionRange(6);
         bossEnemy.setChasesPlayerWhenDetected(true);
