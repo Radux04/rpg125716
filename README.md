@@ -11,11 +11,12 @@ Il progetto contiene:
 - `Enemy`, nel package `model.enemy`
 - nemici concreti: `Slime`, `Goblin`, `Skeleton`, `BossEnemy`
 - `DemoLevel` e `DemoCampaign`, per la struttura dei 3 livelli della demo
-- `GameStateLog`, `LevelState` e `EnemyState`, nel package `persistence`, per rappresentare tutto cio che va salvato
+- `GameStateLog`, `LevelState`, `EnemyState`, `SaveSlot`, `SaveSlotInfo` e `SaveRepository`, nel package `persistence`, per il sistema di salvataggio
 - oggetti di gioco base: `Potion`, `Weapon`, `Armor`, `KeyItem`
 - drop e reward concreti: `OriginStone`, `Helmet`, `BossSword`
 - inventario cumulabile tramite `Inventory`
-- servizio di combattimento tramite `CombatService`
+- servizi applicativi `CombatService`, `SaveService` e `LoadService`
+- `GameLoadController` e `GameController`, nel package `controller`, per la gestione ad alto livello della sessione runtime
 
 Il codice usa Lombok per generare automaticamente `getter`, `setter`, `toString`, `equals` e `hashCode`.
 
@@ -152,6 +153,7 @@ Classi principali:
 - `BossSword`, drop del boss finale con molto attacco aggiuntivo
 
 L'inventario usa una struttura `Map<Item, Integer>`, quindi piu oggetti uguali vengono salvati come quantita.
+Per il salvataggio XML, l'inventario viene esposto anche come lista di `InventoryEntryState`, cosi da evitare problemi di serializzazione con chiavi oggetto.
 
 Metodi principali di `Inventory`:
 
@@ -247,9 +249,88 @@ Metodi principali:
 - `isCombatFinished()`
 - `getWinner()`
 
+### SaveService
+
+Il package `service` contiene anche `SaveService`, che usa `SaveRepository` per gestire i salvataggi applicativi.
+
+Metodi principali:
+
+- `saveGame(GameStateLog gameStateLog, SaveSlot saveSlot)`
+- `loadGame(SaveSlot saveSlot)`
+- `deleteSave(SaveSlot saveSlot)`
+- `getAvailableSlots()`
+- `listSlots()`
+
+### LoadService
+
+Il package `service` contiene anche `LoadService`, che carica uno slot di salvataggio e ricostruisce gli oggetti runtime del gioco.
+
+Restituisce un `LoadedGameSession`, che contiene:
+
+- `saveSlot`
+- `player`
+- `campaign`
+- `completedLevels`
+- `sourceSave`
+- `loadedAt`
+
+Metodi principali:
+
+- `loadFromSlot(SaveSlot saveSlot)`
+- `requireLoadedSession(SaveSlot saveSlot)`
+
+Durante il caricamento:
+
+- viene ricostruito un `Player` runtime a partire dal `GameStateLog`
+- viene ricostruita una `DemoCampaign`
+- i livelli precedenti a quello corrente vengono marcati come completati
+- il livello corrente viene ripristinato dal `LevelState` salvato
+
+### GameLoadController
+
+Il package `controller` contiene `GameLoadController`, un controller ad alto livello che usa `LoadService` e mantiene in memoria la sessione caricata corrente.
+
+Metodi principali:
+
+- `loadSelectedSlot(SaveSlot saveSlot)`
+- `requireCurrentSession()`
+- `getCurrentSession()`
+- `clearCurrentSession()`
+
+### GameController
+
+Il package `controller` contiene anche `GameController`, che unifica il percorso completo:
+
+- load da uno slot
+- gestione della sessione runtime corrente
+- costruzione di un nuovo `GameStateLog` a partire dal runtime
+- save su uno slot scelto
+
+Metodi principali:
+
+- `listSaveSlots()`
+- `loadGame(SaveSlot saveSlot)`
+- `saveCurrentGame(SaveSlot saveSlot)`
+- `deleteSave(SaveSlot saveSlot)`
+- `getCurrentSession()`
+- `requireCurrentSession()`
+- `clearCurrentSession()`
+
+Quando salva la sessione corrente:
+
+- deriva i livelli completati dallo stato reale della `DemoCampaign`
+- costruisce un nuovo `GameStateLog`
+- aggiorna la sessione corrente con il nuovo slot e il nuovo source save
+
 ### Persistence
 
-Il package `persistence` contiene `GameStateLog`, `LevelState` e `EnemyState`, che modellano i dati di salvataggio.
+Il package `persistence` contiene `GameStateLog`, `LevelState`, `EnemyState`, `InventoryEntryState`, `SaveSlot`, `SaveSlotInfo`, `SaveRepository` e `XmlSaveRepository`.
+
+Il sistema supporta 3 slot fissi:
+
+- `SLOT_1` -> `saves/slot-1.xml`
+- `SLOT_2` -> `saves/slot-2.xml`
+- `SLOT_3` -> `saves/slot-3.xml`
 
 Campi salvati:
 
@@ -267,6 +348,24 @@ Vincoli principali:
 - `slotId` valido da `1` a `3`, per supportare fino a 3 slot di salvataggio
 - `saveVersion` per mantenere compatibilita futura del formato di save
 - il `GameStateLog` crea una snapshot dei dati passati, quindi modifiche successive a `Player`, `Inventory` o `completedLevels` non alterano il contenuto del salvataggio gia creato
+
+`SaveRepository` definisce le operazioni base di persistenza:
+
+- `save(GameStateLog gameStateLog, SaveSlot saveSlot)`
+- `load(SaveSlot saveSlot)`
+- `delete(SaveSlot saveSlot)`
+- `exists(SaveSlot saveSlot)`
+- `getAvailableSlots()`
+
+`XmlSaveRepository` implementa il repository su file XML tramite Jackson XML.
+
+`SaveSlotInfo` rappresenta i metadati utili per menu di load/save:
+
+- `slot`
+- `occupied`
+- `playerName`
+- `currentLevel`
+- `lastSavedAt`
 
 `LevelState` rappresenta il livello corrente nel modo in cui deve essere ricaricato:
 
@@ -294,6 +393,7 @@ Scelta progettuale del save:
 
 - se il player salva durante un combattimento o comunque durante un livello non ancora completato, al caricamento quel livello riparte dall'inizio
 - per questo `currentLevelState` salva il punto di restart del livello, non il frame esatto del combattimento in corso
+- se invece il livello corrente e gia completato, il save mantiene quello stato completato
 
 ---
 
@@ -302,6 +402,8 @@ Scelta progettuale del save:
 - Java 25
 - Gradle
 - Lombok
+- Jackson XML
+- Woodstox
 - JUnit 5 per i test
 
 ---

@@ -1,25 +1,23 @@
 package it.unicam.cs.mpgc.rpg125716.persistence;
 
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Enemy;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Objects;
 
-@Getter
-@EqualsAndHashCode
-@ToString
+@Data
+@NoArgsConstructor
 public class EnemyState {
-    private final String enemyType;
-    private final String name;
-    private final int startingHp;
-    private final int attack;
-    private final int defense;
-    private final int experienceReward;
-    private final int goldReward;
-    private final int detectionRange;
-    private final boolean chasesPlayerWhenDetected;
+    private String enemyType;
+    private String name;
+    private int startingHp;
+    private int attack;
+    private int defense;
+    private int experienceReward;
+    private int goldReward;
+    private int detectionRange;
+    private boolean chasesPlayerWhenDetected;
 
     public EnemyState(
             String enemyType,
@@ -32,20 +30,16 @@ public class EnemyState {
             int detectionRange,
             boolean chasesPlayerWhenDetected
     ) {
-        this.enemyType = Objects.requireNonNull(enemyType, "enemyType cannot be null");
-        this.name = Objects.requireNonNull(name, "name cannot be null");
-
-        if (startingHp <= 0) {
-            throw new IllegalArgumentException("startingHp must be positive");
-        }
+        this.enemyType = enemyType;
+        this.name = name;
         this.startingHp = startingHp;
-
         this.attack = attack;
         this.defense = defense;
         this.experienceReward = experienceReward;
         this.goldReward = goldReward;
         this.detectionRange = detectionRange;
         this.chasesPlayerWhenDetected = chasesPlayerWhenDetected;
+        validate();
     }
 
     public static EnemyState fromEnemy(Enemy enemy) {
@@ -61,5 +55,34 @@ public class EnemyState {
                 enemy.getDetectionRange(),
                 enemy.isChasesPlayerWhenDetected()
         );
+    }
+
+    public static EnemyState copyOf(EnemyState other) {
+        Objects.requireNonNull(other, "other cannot be null");
+        return new EnemyState(
+                other.enemyType,
+                other.name,
+                other.startingHp,
+                other.attack,
+                other.defense,
+                other.experienceReward,
+                other.goldReward,
+                other.detectionRange,
+                other.chasesPlayerWhenDetected
+        );
+    }
+
+    public void validate() {
+        if (enemyType == null || enemyType.isBlank()) {
+            throw new IllegalArgumentException("enemyType cannot be blank");
+        }
+
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("name cannot be blank");
+        }
+
+        if (startingHp < 0) {
+            throw new IllegalArgumentException("startingHp cannot be negative");
+        }
     }
 }

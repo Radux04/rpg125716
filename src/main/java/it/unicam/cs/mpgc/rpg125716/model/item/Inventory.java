@@ -1,9 +1,14 @@
 package it.unicam.cs.mpgc.rpg125716.model.item;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
+import it.unicam.cs.mpgc.rpg125716.persistence.InventoryEntryState;
 import lombok.ToString;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -58,7 +63,34 @@ public class Inventory {
         return items.containsKey(item);
     }
 
+    @JsonIgnore
     public Map<Item, Integer> getItems() {
         return Collections.unmodifiableMap(items);
+    }
+
+    @JacksonXmlElementWrapper(localName = "entries")
+    @JacksonXmlProperty(localName = "entry")
+    public List<InventoryEntryState> getEntries() {
+        return items.entrySet().stream()
+                .map(entry -> InventoryEntryState.fromItemStack(entry.getKey(), entry.getValue()))
+                .toList();
+    }
+
+    public void setEntries(List<InventoryEntryState> entries) {
+        items.clear();
+
+        if (entries == null) {
+            return;
+        }
+
+        for (InventoryEntryState entry : entries) {
+            if (entry == null) {
+                continue;
+            }
+
+            Item item = entry.toItem();
+            int quantity = Math.max(1, entry.getQuantity());
+            items.put(item, quantity);
+        }
     }
 }

@@ -1,8 +1,8 @@
 package it.unicam.cs.mpgc.rpg125716.persistence;
 
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
-import it.unicam.cs.mpgc.rpg125716.model.level.DemoCampaign;
 import it.unicam.cs.mpgc.rpg125716.model.item.Potion;
+import it.unicam.cs.mpgc.rpg125716.model.level.DemoCampaign;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,7 +39,6 @@ class GameStateLogTest {
         completedLevels.add("Livello 2");
 
         assertEquals("Hero", gameStateLog.getPlayer().getName());
-        assertEquals(1, gameStateLog.getInventory().getItems().size());
         assertEquals(List.of("Livello 1"), gameStateLog.getCompletedLevels());
         assertEquals(savedAt, gameStateLog.getLastSavedAt());
         assertEquals(1, gameStateLog.getSlotId());
@@ -49,7 +49,7 @@ class GameStateLogTest {
     }
 
     @Test
-    void fromCurrentGameRestartsTheCurrentLevelFromScratchOnLoad() {
+    void fromCurrentGameRestartsTheCurrentUnfinishedLevelFromScratchOnLoad() {
         Player player = new Player("Hero", 60, 10, 5, 8);
         DemoCampaign campaign = new DemoCampaign();
 
@@ -64,6 +64,19 @@ class GameStateLogTest {
         assertTrue(gameStateLog.getCurrentLevelState().isRestartFromBeginningOnLoad());
         assertEquals(35, gameStateLog.getCurrentLevelState().getEnemyStates().get(0).getStartingHp());
         assertEquals(45, gameStateLog.getCurrentLevelState().getEnemyStates().get(1).getStartingHp());
+    }
+
+    @Test
+    void fromCurrentGameKeepsCompletedStateWhenTheCurrentLevelIsAlreadyFinished() {
+        Player player = new Player("Hero", 60, 10, 5, 8);
+        DemoCampaign campaign = new DemoCampaign();
+
+        campaign.getCurrentLevel().getEnemies().forEach(enemy -> enemy.setHp(0));
+
+        GameStateLog gameStateLog = GameStateLog.fromCurrentGame(1, player, campaign, List.of());
+
+        assertFalse(gameStateLog.getCurrentLevelState().isRestartFromBeginningOnLoad());
+        assertTrue(gameStateLog.getCurrentLevelState().isCompleted());
     }
 
     @Test

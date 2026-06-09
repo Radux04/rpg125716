@@ -3,6 +3,8 @@ package it.unicam.cs.mpgc.rpg125716.model.level;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Enemy;
 import it.unicam.cs.mpgc.rpg125716.model.item.Item;
+import it.unicam.cs.mpgc.rpg125716.persistence.EnemyState;
+import it.unicam.cs.mpgc.rpg125716.persistence.LevelState;
 import lombok.Getter;
 
 import java.util.Collections;
@@ -113,6 +115,48 @@ public class DemoLevel {
         player.collectItem(reward);
         rewardClaimed = true;
         return reward;
+    }
+
+    public void restoreFromLevelState(LevelState levelState) {
+        Objects.requireNonNull(levelState, "levelState cannot be null");
+
+        if (levelState.getLevelNumber() != number) {
+            throw new IllegalArgumentException("levelState does not match this level number");
+        }
+
+        List<EnemyState> enemyStates = levelState.getEnemyStates();
+        if (enemyStates.size() != enemies.size()) {
+            throw new IllegalArgumentException("enemyStates size does not match the level enemy count");
+        }
+
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy enemy = enemies.get(i);
+            EnemyState enemyState = enemyStates.get(i);
+
+            enemy.setName(enemyState.getName());
+            enemy.setHp(enemyState.getStartingHp());
+            enemy.setAttack(enemyState.getAttack());
+            enemy.setDefense(enemyState.getDefense());
+            enemy.setExperienceReward(enemyState.getExperienceReward());
+            enemy.setGoldReward(enemyState.getGoldReward());
+            enemy.setDetectionRange(enemyState.getDetectionRange());
+            enemy.setChasesPlayerWhenDetected(enemyState.isChasesPlayerWhenDetected());
+        }
+
+        this.completionDropClaimed = levelState.isCompletionDropClaimed();
+        this.rewardClaimed = levelState.isRewardClaimed();
+    }
+
+    public void markCompletedForRestore() {
+        enemies.forEach(enemy -> enemy.setHp(0));
+
+        if (hasCompletionDrop()) {
+            completionDropClaimed = true;
+        }
+
+        if (hasRewardChoices()) {
+            rewardClaimed = true;
+        }
     }
 
     private void ensureLevelCompleted() {
