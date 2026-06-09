@@ -4,6 +4,8 @@ import it.unicam.cs.mpgc.rpg125716.model.item.Inventory;
 import it.unicam.cs.mpgc.rpg125716.model.item.Item;
 import lombok.Data;
 
+import java.util.Objects;
+
 @Data
 public class Player {
     private String name;
@@ -14,9 +16,12 @@ public class Player {
     private int attack;
     private int defense;
     private int gold;
+    private int speed;
     private Inventory inventory;
+    private ElementType elementType;
+    private ElementalPower elementalPower;
 
-    public Player(String name, int maxHp, int attack, int defense) {
+    public Player(String name, int maxHp, int attack, int defense, int speed) {
         this.name = name;
         this.level = 1;
         this.experience = 0;
@@ -25,7 +30,30 @@ public class Player {
         this.attack = attack;
         this.defense = defense;
         this.gold = 0;
+        this.speed = speed;
         this.inventory = new Inventory();
+    }
+
+    public void chooseElement(ElementType elementType) {
+        this.elementType = Objects.requireNonNull(elementType, "elementType cannot be null");
+        this.elementalPower = ElementalPower.fromElementType(elementType);
+
+        switch (elementType) {
+            case FIRE -> {
+                this.attack += 8;
+                this.speed += 5;
+            }
+            case WATER -> {
+                this.maxHp += 25;
+                this.currentHp += 25;
+                this.speed += 5;
+            }
+            case WIND -> this.speed += 20;
+            case EARTH -> {
+                this.defense += 5;
+                this.attack += 2;
+            }
+        }
     }
 
     public void takeDamage(int damage) {

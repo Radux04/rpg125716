@@ -5,6 +5,8 @@ Progetto Java per la modellazione delle entita principali di un semplice gioco R
 Il progetto contiene:
 
 - `Player`, nel package `model.character`
+- `ElementType`, enum per la specializzazione elementale del player
+- `ElementalPower`, classe che rappresenta il superpotere legato all'elemento scelto
 - `Enemy`, nel package `model.enemy`
 - nemici concreti: `Slime`, `Goblin`, `Skeleton`, `BossEnemy`
 - oggetti di gioco: `Potion`, `Weapon`, `Armor`, `KeyItem`
@@ -31,10 +33,14 @@ Campi principali:
 - `attack`
 - `defense`
 - `gold`
+- `speed`
+- `elementType`
+- `elementalPower`
 - `inventory`
 
 Metodi principali:
 
+- `chooseElement(ElementType elementType)`
 - `takeDamage(int damage)`
 - `heal(int amount)`
 - `gainExperience(int amount)`
@@ -43,6 +49,45 @@ Metodi principali:
 - `collectItem(Item item)`
 - `removeItem(Item item)`
 - `useItem(Item item)`
+
+### ElementType
+
+L'enum `ElementType` definisce l'elemento scelto dal player:
+
+- `FIRE`
+- `WATER`
+- `WIND`
+- `EARTH`
+
+La scelta viene applicata tramite `chooseElement(...)`, che modifica le statistiche del player nel seguente modo:
+
+- `FIRE`: `attack +8`, `speed +5`
+- `WATER`: `maxHp +25`, `currentHp +25`, `speed +5`
+- `WIND`: `speed +20`
+- `EARTH`: `defense +5`, `attack +2`
+
+Inoltre, `chooseElement(...)` assegna automaticamente anche un `ElementalPower` coerente con l'elemento selezionato.
+
+### ElementalPower
+
+La classe `ElementalPower` rappresenta il superpotere elementale del player.
+
+Campi principali:
+
+- `elementType`
+- `name`
+- `description`
+
+Poteri associati:
+
+- `FIRE`: `Fiamma Primordiale` -> aumenta il danno degli attacchi
+- `WATER`: `Cura Fluente` -> permette al giocatore di recuperare punti vita
+- `WIND`: `Passo del Vento` -> aumenta la possibilita di evitare gli attacchi
+- `EARTH`: `Pelle di Roccia` -> aumenta la difesa del giocatore
+
+Per ottenere il potere corretto a partire da un elemento e disponibile il metodo:
+
+- `ElementalPower.fromElementType(ElementType elementType)`
 
 ### Enemy
 
