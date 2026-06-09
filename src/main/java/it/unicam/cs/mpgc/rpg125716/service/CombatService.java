@@ -3,6 +3,7 @@ package it.unicam.cs.mpgc.rpg125716.service;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Enemy;
 import it.unicam.cs.mpgc.rpg125716.model.item.Item;
+import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 
 public class CombatService {
     private boolean combatFinished;
@@ -23,6 +24,7 @@ public class CombatService {
         if (enemy.getHp() == 0) {
             player.gainExperience(enemy.getExperienceReward());
             player.setGold(player.getGold() + enemy.getGoldReward());
+            player.unlockAchievement(AchievementType.FIRST_KILL);
             finishCombat(CombatWinner.PLAYER);
 
             return new CombatResult(

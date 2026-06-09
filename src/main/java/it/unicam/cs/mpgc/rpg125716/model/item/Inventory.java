@@ -45,6 +45,10 @@ public class Inventory {
         return true;
     }
 
+    public boolean containsItem(Item item) {
+        return items.containsKey(item);
+    }
+
     public Map<Item, Integer> getItems() {
         return Collections.unmodifiableMap(items);
     }
