@@ -1,5 +1,6 @@
 package it.unicam.cs.mpgc.rpg125716.model.character;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import it.unicam.cs.mpgc.rpg125716.model.item.Inventory;
 import it.unicam.cs.mpgc.rpg125716.model.item.Item;
 import it.unicam.cs.mpgc.rpg125716.model.item.OriginStone;
@@ -25,9 +26,15 @@ public class Player {
     private Inventory inventory;
     private ElementType elementType;
     private ElementalPower elementalPower;
-    private final Set<AchievementType> unlockedAchievements;
+    private Set<AchievementType> unlockedAchievements;
+
+    public Player() {
+        this.inventory = new Inventory();
+        this.unlockedAchievements = new LinkedHashSet<>();
+    }
 
     public Player(String name, int maxHp, int attack, int defense, int speed) {
+        this();
         this.name = name;
         this.level = 1;
         this.experience = 0;
@@ -37,8 +44,6 @@ public class Player {
         this.defense = defense;
         this.gold = 0;
         this.speed = speed;
-        this.inventory = new Inventory();
-        this.unlockedAchievements = new LinkedHashSet<>();
     }
 
     public Player(Player other) {
@@ -54,13 +59,7 @@ public class Player {
         this.speed = other.speed;
         this.inventory = new Inventory(other.inventory);
         this.elementType = other.elementType;
-        this.elementalPower = other.elementalPower == null
-                ? null
-                : new ElementalPower(
-                other.elementalPower.getElementType(),
-                other.elementalPower.getName(),
-                other.elementalPower.getDescription()
-        );
+        this.elementalPower = copyElementalPower(other.elementalPower);
         this.unlockedAchievements = new LinkedHashSet<>(other.unlockedAchievements);
     }
 
@@ -132,6 +131,7 @@ public class Player {
         defense += 1;
     }
 
+    @JsonIgnore
     public boolean isAlive() {
         return currentHp > 0;
     }
@@ -156,12 +156,37 @@ public class Player {
         return unlockedAchievements.contains(Objects.requireNonNull(achievementType, "achievementType cannot be null"));
     }
 
+    public void setInventory(Inventory inventory) {
+        this.inventory = inventory == null ? new Inventory() : inventory;
+    }
+
+    public void setUnlockedAchievements(Set<AchievementType> unlockedAchievements) {
+        this.unlockedAchievements = unlockedAchievements == null
+                ? new LinkedHashSet<>()
+                : new LinkedHashSet<>(unlockedAchievements);
+    }
+
     public Set<AchievementType> getUnlockedAchievements() {
         return Collections.unmodifiableSet(unlockedAchievements);
     }
 
     private int experienceToNextLevel() {
         return level * 100;
+    }
+
+    private static ElementalPower copyElementalPower(ElementalPower elementalPower) {
+        if (elementalPower == null
+                || elementalPower.getElementType() == null
+                || elementalPower.getName() == null
+                || elementalPower.getDescription() == null) {
+            return null;
+        }
+
+        return new ElementalPower(
+                elementalPower.getElementType(),
+                elementalPower.getName(),
+                elementalPower.getDescription()
+        );
     }
 
 }

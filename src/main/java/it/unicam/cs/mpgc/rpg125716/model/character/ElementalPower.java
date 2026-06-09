@@ -1,18 +1,16 @@
 package it.unicam.cs.mpgc.rpg125716.model.character;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Objects;
 
-@Getter
-@EqualsAndHashCode
-@ToString
+@Data
+@NoArgsConstructor
 public class ElementalPower {
-    private final ElementType elementType;
-    private final String name;
-    private final String description;
+    private ElementType elementType;
+    private String name;
+    private String description;
 
     public ElementalPower(ElementType elementType, String name, String description) {
         this.elementType = Objects.requireNonNull(elementType, "elementType cannot be null");
