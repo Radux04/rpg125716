@@ -11,6 +11,7 @@ Il progetto contiene:
 - `Enemy`, nel package `model.enemy`
 - nemici concreti: `Slime`, `Goblin`, `Skeleton`, `BossEnemy`
 - `DemoLevel` e `DemoCampaign`, per la struttura dei 3 livelli della demo
+- `GameStateLog`, `LevelState` e `EnemyState`, nel package `persistence`, per rappresentare tutto cio che va salvato
 - oggetti di gioco base: `Potion`, `Weapon`, `Armor`, `KeyItem`
 - drop e reward concreti: `OriginStone`, `Helmet`, `BossSword`
 - inventario cumulabile tramite `Inventory`
@@ -245,6 +246,54 @@ Metodi principali:
 - `useItem(Player player, Item item)`
 - `isCombatFinished()`
 - `getWinner()`
+
+### Persistence
+
+Il package `persistence` contiene `GameStateLog`, `LevelState` e `EnemyState`, che modellano i dati di salvataggio.
+
+Campi salvati:
+
+- `int saveVersion`
+- `int slotId`
+- `Player player`
+- `int currentLevel`
+- `List<String> completedLevels`
+- `Inventory inventory`
+- `LevelState currentLevelState`
+- `LocalDateTime lastSavedAt`
+
+Vincoli principali:
+
+- `slotId` valido da `1` a `3`, per supportare fino a 3 slot di salvataggio
+- `saveVersion` per mantenere compatibilita futura del formato di save
+- il `GameStateLog` crea una snapshot dei dati passati, quindi modifiche successive a `Player`, `Inventory` o `completedLevels` non alterano il contenuto del salvataggio gia creato
+
+`LevelState` rappresenta il livello corrente nel modo in cui deve essere ricaricato:
+
+- `levelNumber`
+- `levelName`
+- flag del livello come `tutorial`, `bossFight`, `unlocksElementChoice`, `endsDemoWithVictory`
+- `restartFromBeginningOnLoad`
+- `completionDropName`
+- `rewardOptions`
+- `enemyStates`
+
+`EnemyState` rappresenta ogni nemico salvato per il restart del livello:
+
+- `enemyType`
+- `name`
+- `startingHp`
+- `attack`
+- `defense`
+- `experienceReward`
+- `goldReward`
+- `detectionRange`
+- `chasesPlayerWhenDetected`
+
+Scelta progettuale del save:
+
+- se il player salva durante un combattimento o comunque durante un livello non ancora completato, al caricamento quel livello riparte dall'inizio
+- per questo `currentLevelState` salva il punto di restart del livello, non il frame esatto del combattimento in corso
 
 ---
 

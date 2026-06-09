@@ -41,6 +41,29 @@ public class Player {
         this.unlockedAchievements = new LinkedHashSet<>();
     }
 
+    public Player(Player other) {
+        Objects.requireNonNull(other, "other cannot be null");
+        this.name = other.name;
+        this.level = other.level;
+        this.experience = other.experience;
+        this.maxHp = other.maxHp;
+        this.currentHp = other.currentHp;
+        this.attack = other.attack;
+        this.defense = other.defense;
+        this.gold = other.gold;
+        this.speed = other.speed;
+        this.inventory = new Inventory(other.inventory);
+        this.elementType = other.elementType;
+        this.elementalPower = other.elementalPower == null
+                ? null
+                : new ElementalPower(
+                other.elementalPower.getElementType(),
+                other.elementalPower.getName(),
+                other.elementalPower.getDescription()
+        );
+        this.unlockedAchievements = new LinkedHashSet<>(other.unlockedAchievements);
+    }
+
     public void chooseElement(ElementType elementType) {
         if (this.elementType != null) {
             throw new IllegalStateException("the player has already chosen an element");
