@@ -80,6 +80,11 @@ public class GameController {
         return loadedGameSession;
     }
 
+    public LoadedGameSession openSession(LoadedGameSession loadedGameSession) {
+        currentSession = Objects.requireNonNull(loadedGameSession, "loadedGameSession cannot be null");
+        return currentSession;
+    }
+
     public GameStateLog saveCurrentGame(SaveSlot saveSlot) {
         Objects.requireNonNull(saveSlot, "saveSlot cannot be null");
 
@@ -129,7 +134,6 @@ public class GameController {
         DemoLevel currentLevel = session.getCampaign().getCurrentLevel();
         Item item = currentLevel.grantCompletionDrop(session.getPlayer());
         gameEventDispatcher.dispatch(new ItemCollectedEvent(session.getPlayer(), item, session.getPlayer().getInventory().getTotalItemCount()));
-        gameEventDispatcher.dispatch(new LevelCompletedEvent(session.getPlayer(), currentLevel));
         return item;
     }
 
@@ -140,7 +144,6 @@ public class GameController {
         DemoLevel currentLevel = session.getCampaign().getCurrentLevel();
         Item item = currentLevel.chooseReward(session.getPlayer(), rewardChoice);
         gameEventDispatcher.dispatch(new ItemCollectedEvent(session.getPlayer(), item, session.getPlayer().getInventory().getTotalItemCount()));
-        gameEventDispatcher.dispatch(new LevelCompletedEvent(session.getPlayer(), currentLevel));
         return item;
     }
 

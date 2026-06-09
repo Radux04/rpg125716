@@ -17,7 +17,7 @@ Il progetto contiene:
 - oggetti di gioco base: `Potion`, `Weapon`, `Armor`, `KeyItem`
 - drop e reward concreti: `OriginStone`, `Helmet`, `BossSword`
 - inventario cumulabile tramite `Inventory`
-- servizi applicativi `CombatService`, `SaveService`, `LoadService` e `AchievementService`
+- servizi applicativi `CombatService`, `SaveService`, `LoadService`, `AchievementService` e `GameService`
 - `GameLoadController` e `GameController`, nel package `controller`, per la gestione ad alto livello della sessione runtime
 
 Il codice usa Lombok per generare automaticamente `getter`, `setter`, `toString`, `equals` e `hashCode`.
@@ -338,6 +338,20 @@ Durante il caricamento:
 - il livello corrente viene ripristinato dal `LevelState` salvato
 - gli achievement globali vengono sincronizzati con quelli presenti nel `Player` caricato
 
+### CurrentGameState
+
+La classe `CurrentGameState` rappresenta la vista runtime che il frontend puo leggere in modo diretto.
+
+Campi principali:
+
+- `saveSlot`
+- `player`
+- `campaign`
+- `currentLevel`
+- `completedLevels`
+- `currentLevelStarted`
+- `demoCompleted`
+
 ### AchievementService
 
 Il package `service` contiene anche `AchievementService`, che gestisce la persistenza globale degli achievement.
@@ -361,6 +375,33 @@ Scelta progettuale:
 - se carichi un vecchio save con achievement solo locali nel `Player`, `synchronizePlayerAchievements(...)` li porta anche nel registro globale
 - se invece esistono achievement globali gia sbloccati, questi vengono rimessi nel `Player` caricato o nella nuova run
 - i nuovi achievement gameplay vengono sbloccati soprattutto tramite eventi, non con logica distribuita nei modelli
+
+### GameService
+
+`GameService` e la facciata principale pensata per il frontend JavaFX.
+Incapsula il flusso di nuova partita, caricamento, salvataggio e avanzamento dei livelli sopra `GameController`.
+
+Metodi principali:
+
+- `newGame()`
+- `loadGame(SaveSlot saveSlot)`
+- `saveCurrentGame(SaveSlot saveSlot)`
+- `getCurrentGameState()`
+- `startLevel()`
+- `completeCurrentLevel()`
+
+Metodi di supporto esposti anche per il flusso della demo:
+
+- `attuneCurrentPlayerToOriginStone(ElementType elementType)`
+- `chooseCurrentLevelReward(LevelRewardChoice rewardChoice)`
+- `listSaveSlots()`
+- `deleteSave(SaveSlot saveSlot)`
+
+Scelta progettuale:
+
+- `newGame()` crea una sessione runtime nuova con un player di default e la `DemoCampaign`
+- `getCurrentGameState()` restituisce un `CurrentGameState`, quindi il frontend non deve ricostruire manualmente lo stato leggendo i servizi interni
+- `completeCurrentLevel()` valida che il livello sia davvero finito e blocca l'avanzamento se mancano ancora scelte obbligatorie, come elemento o reward
 
 ### GameLoadController
 
@@ -406,6 +447,7 @@ Quando salva la sessione corrente:
 - aggiorna la sessione corrente con il nuovo slot e il nuovo source save
 
 Inoltre, `GameController` espone anche entry point che emettono eventi di raccolta item, completamento livello, morte del player e sintonia con la `Pietra dell'Origine`, cosi la UI o il game loop possono usare un backend gia pronto per logica estendibile basata su eventi.
+`GameService` usa `GameController` come livello di orchestrazione sottostante, mentre il frontend dovrebbe preferire `GameService` come API principale.
 
 ### Persistence
 
