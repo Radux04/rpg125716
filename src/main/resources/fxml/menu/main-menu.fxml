@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import java.lang.String?>
+
+<StackPane xmlns="http://javafx.com/javafx/25"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.MainMenuController"
+           styleClass="app-root">
+    <children>
+        <VBox alignment="CENTER" maxWidth="420.0" spacing="18.0" styleClass="menu-panel">
+            <padding>
+                <Insets bottom="48.0" left="48.0" right="48.0" top="48.0" />
+            </padding>
+            <children>
+                <Label styleClass="eyebrow-label" text="RPG Demo" />
+                <Label styleClass="game-title" text="The Forgotten Gate" wrapText="true" />
+                <Label styleClass="body-label"
+                       text="Varca il portale. Scegli se iniziare una nuova run o riaprire un salvataggio."
+                       textAlignment="CENTER"
+                       wrapText="true" />
+                <Button maxWidth="1.7976931348623157E308"
+                        mnemonicParsing="false"
+                        onAction="#handleNewGame"
+                        text="Nuova Partita">
+                    <styleClass>
+                        <String fx:value="menu-button" />
+                        <String fx:value="primary-button" />
+                    </styleClass>
+                </Button>
+                <Button maxWidth="1.7976931348623157E308"
+                        mnemonicParsing="false"
+                        onAction="#handleLoadGame"
+                        text="Carica Partita">
+                    <styleClass>
+                        <String fx:value="menu-button" />
+                        <String fx:value="secondary-button" />
+                    </styleClass>
+                </Button>
+            </children>
+        </VBox>
+    </children>
+</StackPane>
