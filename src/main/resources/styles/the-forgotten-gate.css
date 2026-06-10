@@ -71,6 +71,23 @@
     -fx-font-size: 14px;
 }
 
+.slot-card {
+    -fx-cursor: hand;
+}
+
+.slot-card:hover {
+    -fx-background-color: rgba(36, 28, 43, 0.94);
+    -fx-border-color: rgba(223, 185, 115, 0.58);
+}
+
+.slot-card-empty {
+    -fx-opacity: 0.92;
+}
+
+.slot-card-filled {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 18, 0.12, 0, 8);
+}
+
 .menu-button {
     -fx-font-size: 15px;
     -fx-font-weight: 700;
@@ -108,6 +125,25 @@
 
 .slot-action-button {
     -fx-min-width: 120px;
+}
+
+.slot-state-filled,
+.slot-state-empty,
+.slot-action-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.slot-state-filled {
+    -fx-text-fill: #dcb579;
+}
+
+.slot-state-empty {
+    -fx-text-fill: #b89976;
+}
+
+.slot-action-label {
+    -fx-text-fill: #f3e7cb;
 }
 
 .slot-badge {
