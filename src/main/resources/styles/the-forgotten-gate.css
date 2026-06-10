@@ -1,0 +1,137 @@
+.root {
+    -fx-font-family: "Segoe UI", "Verdana", sans-serif;
+}
+
+.app-root {
+    -fx-background-color:
+            radial-gradient(center 50% 20%, radius 85%, rgba(97, 76, 48, 0.28), transparent 55%),
+            linear-gradient(to bottom, #1d1821 0%, #131017 45%, #0d0a10 100%);
+}
+
+.menu-panel,
+.content-card,
+.slot-card {
+    -fx-background-color: rgba(23, 18, 28, 0.88);
+    -fx-background-radius: 18;
+    -fx-border-color: rgba(203, 162, 95, 0.42);
+    -fx-border-radius: 18;
+    -fx-border-width: 1;
+}
+
+.menu-panel {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 30, 0.18, 0, 12);
+}
+
+.eyebrow-label {
+    -fx-text-fill: #c5a670;
+    -fx-font-size: 14px;
+    -fx-font-weight: 700;
+    -fx-letter-spacing: 1.4px;
+}
+
+.game-title,
+.section-title,
+.card-title,
+.slot-title,
+.slot-badge,
+.stat-pill-value {
+    -fx-text-fill: #f3e7cb;
+}
+
+.game-title {
+    -fx-font-size: 40px;
+    -fx-font-weight: 800;
+    -fx-text-alignment: center;
+}
+
+.section-title {
+    -fx-font-size: 30px;
+    -fx-font-weight: 800;
+}
+
+.card-title,
+.slot-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: 700;
+}
+
+.body-label {
+    -fx-text-fill: #d4c9b4;
+    -fx-font-size: 15px;
+    -fx-line-spacing: 2px;
+}
+
+.muted-label {
+    -fx-text-fill: #a6947a;
+    -fx-font-size: 13px;
+}
+
+.feedback-label {
+    -fx-text-fill: #f4cb7e;
+    -fx-font-size: 14px;
+}
+
+.menu-button {
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+    -fx-padding: 14 22 14 22;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-cursor: hand;
+}
+
+.primary-button {
+    -fx-background-color: linear-gradient(to bottom, #a77931 0%, #7c5420 100%);
+    -fx-text-fill: #fff4df;
+    -fx-border-color: rgba(255, 223, 172, 0.28);
+}
+
+.primary-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #bb8940 0%, #8c6027 100%);
+}
+
+.secondary-button {
+    -fx-background-color: rgba(67, 54, 79, 0.92);
+    -fx-text-fill: #efe2cc;
+    -fx-border-color: rgba(203, 162, 95, 0.34);
+}
+
+.secondary-button:hover {
+    -fx-background-color: rgba(84, 67, 101, 0.96);
+}
+
+.menu-button:disabled,
+.menu-button:disabled:hover {
+    -fx-opacity: 0.55;
+    -fx-cursor: default;
+}
+
+.slot-action-button {
+    -fx-min-width: 120px;
+}
+
+.slot-badge {
+    -fx-background-color: rgba(169, 121, 49, 0.18);
+    -fx-background-radius: 999;
+    -fx-padding: 10 16 10 16;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.stat-pill {
+    -fx-background-color: rgba(92, 67, 43, 0.24);
+    -fx-background-radius: 14;
+    -fx-border-color: rgba(203, 162, 95, 0.18);
+    -fx-border-radius: 14;
+}
+
+.stat-pill-label {
+    -fx-text-fill: #b8a789;
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+}
+
+.stat-pill-value {
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}

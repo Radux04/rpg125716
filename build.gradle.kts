@@ -1,5 +1,7 @@
 plugins {
     id("java")
+    id("application")
+    id("org.openjfx.javafxplugin") version "0.1.0"
 }
 
 group = "it.unicam.cs.mpgc"
@@ -13,6 +15,15 @@ java {
 
 repositories {
     mavenCentral()
+}
+
+application {
+    mainClass = "it.unicam.cs.mpgc.rpg125716.Main"
+}
+
+javafx {
+    version = "25"
+    modules("javafx.controls")
 }
 
 dependencies {
