@@ -44,6 +44,15 @@ class GameServiceTest {
     }
 
     @Test
+    void newGameUsesTheChosenPlayerName() {
+        GameService gameService = createGameService();
+
+        CurrentGameState newGameState = gameService.newGame("Alyx");
+
+        assertEquals("Alyx", newGameState.getPlayer().getName());
+    }
+
+    @Test
     void tutorialLevelRequiresElementSelectionBeforeAdvancing() {
         GameService gameService = createGameService();
         gameService.newGame();
