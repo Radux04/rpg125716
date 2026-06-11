@@ -6,8 +6,8 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 
 public class FrontendApplication extends Application {
-    private static final double WINDOW_WIDTH = 1600;
-    private static final double WINDOW_HEIGHT = 900;
+    private static final double WINDOW_WIDTH = 1840;
+    private static final double WINDOW_HEIGHT = 1020;
 
     @Override
     public void start(Stage stage) {

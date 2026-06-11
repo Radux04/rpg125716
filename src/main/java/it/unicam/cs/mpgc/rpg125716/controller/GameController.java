@@ -16,6 +16,7 @@ import it.unicam.cs.mpgc.rpg125716.persistence.GameStateLog;
 import it.unicam.cs.mpgc.rpg125716.persistence.SaveSlot;
 import it.unicam.cs.mpgc.rpg125716.persistence.SaveSlotInfo;
 import it.unicam.cs.mpgc.rpg125716.service.AchievementService;
+import it.unicam.cs.mpgc.rpg125716.service.CombatService;
 import it.unicam.cs.mpgc.rpg125716.service.LoadService;
 import it.unicam.cs.mpgc.rpg125716.service.LoadedGameSession;
 import it.unicam.cs.mpgc.rpg125716.service.SaveService;
@@ -158,6 +159,10 @@ public class GameController {
 
     public boolean deleteSave(SaveSlot saveSlot) {
         return saveService.deleteSave(saveSlot);
+    }
+
+    public CombatService createCombatService() {
+        return new CombatService(gameEventDispatcher);
     }
 
     public List<Achievement> getAllAchievements() {

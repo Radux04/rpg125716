@@ -1,6 +1,7 @@
 package it.unicam.cs.mpgc.rpg125716.frontend.scene;
 
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.game.GameOverviewController;
+import it.unicam.cs.mpgc.rpg125716.frontend.controller.game.GameViewController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.LoadSlotsController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.MainMenuController;
 import it.unicam.cs.mpgc.rpg125716.service.CurrentGameState;
@@ -18,6 +19,7 @@ public class SceneNavigator {
     private static final String MAIN_MENU_FXML = "/fxml/menu/main-menu.fxml";
     private static final String LOAD_SLOTS_FXML = "/fxml/menu/load-slots.fxml";
     private static final String GAME_OVERVIEW_FXML = "/fxml/game/game-overview.fxml";
+    private static final String GAME_VIEW_FXML = "/fxml/game/game-view.fxml";
 
     private final Stage stage;
     private final GameService gameService;
@@ -47,6 +49,14 @@ public class SceneNavigator {
 
     public void showGameOverview(CurrentGameState currentGameState, String feedbackMessage) {
         show(GAME_OVERVIEW_FXML, currentGameState, feedbackMessage);
+    }
+
+    public void showGameView(CurrentGameState currentGameState) {
+        showGameView(currentGameState, null);
+    }
+
+    public void showGameView(CurrentGameState currentGameState, String feedbackMessage) {
+        show(GAME_VIEW_FXML, currentGameState, feedbackMessage);
     }
 
     private void show(String fxmlPath, CurrentGameState currentGameState, String feedbackMessage) {
@@ -84,6 +94,15 @@ public class SceneNavigator {
 
         if (controllerType == GameOverviewController.class) {
             return new GameOverviewController(
+                    this,
+                    gameService,
+                    Objects.requireNonNull(currentGameState, "currentGameState cannot be null"),
+                    feedbackMessage
+            );
+        }
+
+        if (controllerType == GameViewController.class) {
+            return new GameViewController(
                     this,
                     gameService,
                     Objects.requireNonNull(currentGameState, "currentGameState cannot be null"),
