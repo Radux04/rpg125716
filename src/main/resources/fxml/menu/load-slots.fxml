@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.effect.GaussianBlur?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import java.lang.String?>
+
+<StackPane xmlns="http://javafx.com/javafx/25"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.LoadSlotsController">
+    <styleClass>
+        <String fx:value="app-root" />
+        <String fx:value="subscreen-root" />
+    </styleClass>
+    <children>
+        <Pane mouseTransparent="true" styleClass="blurred-background">
+            <effect>
+                <GaussianBlur radius="26.0" />
+            </effect>
+        </Pane>
+        <Pane mouseTransparent="true" styleClass="subscreen-overlay" />
+        <BorderPane styleClass="subscreen-content">
+            <padding>
+                <Insets bottom="36.0" left="36.0" right="36.0" top="36.0" />
+            </padding>
+            <center>
+                <VBox alignment="TOP_CENTER" spacing="18.0">
+                    <children>
+                        <Label styleClass="section-title" text="Carica Partita" />
+                        <Label styleClass="body-label"
+                               text="Scegli uno slot occupato per riprendere la tua run."
+                               wrapText="true" />
+                        <VBox maxWidth="760.0" spacing="14.0">
+                            <children>
+                                <HBox fx:id="slot1Card"
+                                      alignment="CENTER_LEFT"
+                                      onMouseClicked="#handleSlot1Selection"
+                                      spacing="18.0"
+                                      styleClass="slot-card">
+                                    <padding>
+                                        <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
+                                    </padding>
+                                    <children>
+                                        <VBox spacing="6.0">
+                                            <children>
+                                                <Label styleClass="slot-title" text="Slot 1" />
+                                                <Label fx:id="slot1StateLabel" styleClass="slot-state-empty" text="Vuoto" />
+                                                <Label fx:id="slot1DetailsLabel" styleClass="body-label" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Label fx:id="slot1ActionLabel" styleClass="slot-action-label" text="Non disponibile" />
+                                    </children>
+                                </HBox>
+                                <HBox fx:id="slot2Card"
+                                      alignment="CENTER_LEFT"
+                                      onMouseClicked="#handleSlot2Selection"
+                                      spacing="18.0"
+                                      styleClass="slot-card">
+                                    <padding>
+                                        <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
+                                    </padding>
+                                    <children>
+                                        <VBox spacing="6.0">
+                                            <children>
+                                                <Label styleClass="slot-title" text="Slot 2" />
+                                                <Label fx:id="slot2StateLabel" styleClass="slot-state-empty" text="Vuoto" />
+                                                <Label fx:id="slot2DetailsLabel" styleClass="body-label" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Label fx:id="slot2ActionLabel" styleClass="slot-action-label" text="Non disponibile" />
+                                    </children>
+                                </HBox>
+                                <HBox fx:id="slot3Card"
+                                      alignment="CENTER_LEFT"
+                                      onMouseClicked="#handleSlot3Selection"
+                                      spacing="18.0"
+                                      styleClass="slot-card">
+                                    <padding>
+                                        <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
+                                    </padding>
+                                    <children>
+                                        <VBox spacing="6.0">
+                                            <children>
+                                                <Label styleClass="slot-title" text="Slot 3" />
+                                                <Label fx:id="slot3StateLabel" styleClass="slot-state-empty" text="Vuoto" />
+                                                <Label fx:id="slot3DetailsLabel" styleClass="body-label" wrapText="true" />
+                                            </children>
+                                        </VBox>
+                                        <Region HBox.hgrow="ALWAYS" />
+                                        <Label fx:id="slot3ActionLabel" styleClass="slot-action-label" text="Non disponibile" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+                        <Label fx:id="feedbackLabel" styleClass="feedback-label" wrapText="true" />
+                        <Button mnemonicParsing="false"
+                                onAction="#handleBack"
+                                text="Indietro">
+                            <styleClass>
+                                <String fx:value="menu-button" />
+                                <String fx:value="secondary-button" />
+                            </styleClass>
+                        </Button>
+                    </children>
+                </VBox>
+            </center>
+        </BorderPane>
+    </children>
+</StackPane>

@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.effect.GaussianBlur?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import java.lang.String?>
+
+<StackPane xmlns="http://javafx.com/javafx/25"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="it.unicam.cs.mpgc.rpg125716.frontend.controller.game.GameOverviewController">
+    <styleClass>
+        <String fx:value="app-root" />
+        <String fx:value="subscreen-root" />
+    </styleClass>
+    <children>
+        <Pane mouseTransparent="true" styleClass="blurred-background">
+            <effect>
+                <GaussianBlur radius="26.0" />
+            </effect>
+        </Pane>
+        <Pane mouseTransparent="true" styleClass="subscreen-overlay" />
+        <BorderPane styleClass="subscreen-content">
+            <padding>
+                <Insets bottom="32.0" left="32.0" right="32.0" top="32.0" />
+            </padding>
+            <center>
+                <VBox spacing="22.0">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="16.0">
+                            <children>
+                                <Label styleClass="section-title" text="Run Avviata" />
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Label fx:id="slotBadgeLabel" styleClass="slot-badge" text="Nuova Run" />
+                            </children>
+                        </HBox>
+
+                        <VBox spacing="12.0" styleClass="content-card">
+                            <padding>
+                                <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
+                            </padding>
+                            <children>
+                                <Label styleClass="card-title" text="Eroe" />
+                                <FlowPane hgap="12.0" vgap="12.0">
+                                    <children>
+                                        <VBox spacing="4.0" styleClass="stat-pill">
+                                            <padding>
+                                                <Insets bottom="10.0" left="14.0" right="14.0" top="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="stat-pill-label" text="Nome" />
+                                                <Label fx:id="playerNameValueLabel" styleClass="stat-pill-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0" styleClass="stat-pill">
+                                            <padding>
+                                                <Insets bottom="10.0" left="14.0" right="14.0" top="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="stat-pill-label" text="HP" />
+                                                <Label fx:id="playerHpValueLabel" styleClass="stat-pill-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0" styleClass="stat-pill">
+                                            <padding>
+                                                <Insets bottom="10.0" left="14.0" right="14.0" top="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="stat-pill-label" text="Attacco" />
+                                                <Label fx:id="playerAttackValueLabel" styleClass="stat-pill-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0" styleClass="stat-pill">
+                                            <padding>
+                                                <Insets bottom="10.0" left="14.0" right="14.0" top="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="stat-pill-label" text="Difesa" />
+                                                <Label fx:id="playerDefenseValueLabel" styleClass="stat-pill-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0" styleClass="stat-pill">
+                                            <padding>
+                                                <Insets bottom="10.0" left="14.0" right="14.0" top="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="stat-pill-label" text="Velocita" />
+                                                <Label fx:id="playerSpeedValueLabel" styleClass="stat-pill-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0" styleClass="stat-pill">
+                                            <padding>
+                                                <Insets bottom="10.0" left="14.0" right="14.0" top="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="stat-pill-label" text="Elemento" />
+                                                <Label fx:id="playerElementValueLabel" styleClass="stat-pill-value" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </FlowPane>
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="12.0" styleClass="content-card">
+                            <padding>
+                                <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
+                            </padding>
+                            <children>
+                                <Label fx:id="levelNameLabel" styleClass="card-title" />
+                                <Label fx:id="levelDescriptionLabel" styleClass="body-label" wrapText="true" />
+                                <FlowPane hgap="12.0" vgap="12.0">
+                                    <children>
+                                        <VBox spacing="4.0" styleClass="stat-pill">
+                                            <padding>
+                                                <Insets bottom="10.0" left="14.0" right="14.0" top="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="stat-pill-label" text="Nemici rimasti" />
+                                                <Label fx:id="remainingEnemiesValueLabel" styleClass="stat-pill-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0" styleClass="stat-pill">
+                                            <padding>
+                                                <Insets bottom="10.0" left="14.0" right="14.0" top="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="stat-pill-label" text="Stato livello" />
+                                                <Label fx:id="levelStatusValueLabel" styleClass="stat-pill-value" />
+                                            </children>
+                                        </VBox>
+                                        <VBox spacing="4.0" styleClass="stat-pill">
+                                            <padding>
+                                                <Insets bottom="10.0" left="14.0" right="14.0" top="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Label styleClass="stat-pill-label" text="Livelli completati" />
+                                                <Label fx:id="completedLevelsValueLabel" styleClass="stat-pill-value" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </FlowPane>
+                                <Label fx:id="levelFlagsLabel" styleClass="muted-label" wrapText="true" />
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="12.0" styleClass="content-card">
+                            <padding>
+                                <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
+                            </padding>
+                            <children>
+                                <Label styleClass="card-title" text="Salvataggi" />
+                                <Label styleClass="body-label"
+                                       text="Puoi fissare subito la run su uno dei tre slot disponibili."
+                                       wrapText="true" />
+                                <HBox spacing="10.0">
+                                    <children>
+                                        <Button mnemonicParsing="false"
+                                                onAction="#handleSaveSlot1"
+                                                text="Salva Slot 1">
+                                            <styleClass>
+                                                <String fx:value="menu-button" />
+                                                <String fx:value="secondary-button" />
+                                            </styleClass>
+                                        </Button>
+                                        <Button mnemonicParsing="false"
+                                                onAction="#handleSaveSlot2"
+                                                text="Salva Slot 2">
+                                            <styleClass>
+                                                <String fx:value="menu-button" />
+                                                <String fx:value="secondary-button" />
+                                            </styleClass>
+                                        </Button>
+                                        <Button mnemonicParsing="false"
+                                                onAction="#handleSaveSlot3"
+                                                text="Salva Slot 3">
+                                            <styleClass>
+                                                <String fx:value="menu-button" />
+                                                <String fx:value="secondary-button" />
+                                            </styleClass>
+                                        </Button>
+                                    </children>
+                                </HBox>
+                                <Label fx:id="feedbackLabel" styleClass="feedback-label" wrapText="true" />
+                            </children>
+                        </VBox>
+
+                        <HBox alignment="CENTER_LEFT" spacing="12.0">
+                            <children>
+                                <Button fx:id="startLevelButton"
+                                        mnemonicParsing="false"
+                                        onAction="#handleStartLevel"
+                                        text="Inizia Livello">
+                                    <styleClass>
+                                        <String fx:value="menu-button" />
+                                        <String fx:value="primary-button" />
+                                    </styleClass>
+                                </Button>
+                                <Button mnemonicParsing="false"
+                                        onAction="#handleBack"
+                                        text="Torna al Menu">
+                                    <styleClass>
+                                        <String fx:value="menu-button" />
+                                        <String fx:value="secondary-button" />
+                                    </styleClass>
+                                </Button>
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+            </center>
+        </BorderPane>
+    </children>
+</StackPane>

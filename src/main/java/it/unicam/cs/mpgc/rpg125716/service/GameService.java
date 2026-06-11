@@ -32,9 +32,13 @@ public class GameService {
     }
 
     public CurrentGameState newGame() {
+        return newGame(DEFAULT_PLAYER_NAME);
+    }
+
+    public CurrentGameState newGame(String playerName) {
         LoadedGameSession session = new LoadedGameSession(
                 null,
-                createDefaultPlayer(),
+                createPlayer(playerName),
                 new DemoCampaign(),
                 List.of(),
                 null,
@@ -143,13 +147,21 @@ public class GameService {
         );
     }
 
-    private static Player createDefaultPlayer() {
+    private static Player createPlayer(String playerName) {
         return new Player(
-                DEFAULT_PLAYER_NAME,
+                normalizePlayerName(playerName),
                 DEFAULT_PLAYER_MAX_HP,
                 DEFAULT_PLAYER_ATTACK,
                 DEFAULT_PLAYER_DEFENSE,
                 DEFAULT_PLAYER_SPEED
         );
+    }
+
+    private static String normalizePlayerName(String playerName) {
+        if (playerName == null || playerName.isBlank()) {
+            return DEFAULT_PLAYER_NAME;
+        }
+
+        return playerName.trim();
     }
 }

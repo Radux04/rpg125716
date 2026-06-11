@@ -3,19 +3,22 @@ package it.unicam.cs.mpgc.rpg125716.frontend.scene;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.game.GameOverviewController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.LoadSlotsController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.MainMenuController;
-import it.unicam.cs.mpgc.rpg125716.frontend.view.game.GameOverviewView;
-import it.unicam.cs.mpgc.rpg125716.frontend.view.menu.LoadSlotsView;
-import it.unicam.cs.mpgc.rpg125716.frontend.view.menu.MainMenuView;
 import it.unicam.cs.mpgc.rpg125716.service.CurrentGameState;
 import it.unicam.cs.mpgc.rpg125716.service.GameService;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;
 
 public class SceneNavigator {
+    private static final String MAIN_MENU_FXML = "/fxml/menu/main-menu.fxml";
+    private static final String LOAD_SLOTS_FXML = "/fxml/menu/load-slots.fxml";
+    private static final String GAME_OVERVIEW_FXML = "/fxml/game/game-overview.fxml";
+
     private final Stage stage;
     private final GameService gameService;
     private final double sceneWidth;
@@ -31,13 +34,11 @@ public class SceneNavigator {
     }
 
     public void showMainMenu() {
-        MainMenuView view = new MainMenuView(new MainMenuController(gameService), this);
-        show(view.getRoot());
+        show(MAIN_MENU_FXML, null, null);
     }
 
     public void showLoadSlots() {
-        LoadSlotsView view = new LoadSlotsView(new LoadSlotsController(gameService), this);
-        show(view.getRoot());
+        show(LOAD_SLOTS_FXML, null, null);
     }
 
     public void showGameOverview(CurrentGameState currentGameState) {
@@ -45,13 +46,52 @@ public class SceneNavigator {
     }
 
     public void showGameOverview(CurrentGameState currentGameState, String feedbackMessage) {
-        GameOverviewView view = new GameOverviewView(
-                new GameOverviewController(gameService),
-                this,
-                currentGameState,
-                feedbackMessage
-        );
-        show(view.getRoot());
+        show(GAME_OVERVIEW_FXML, currentGameState, feedbackMessage);
+    }
+
+    private void show(String fxmlPath, CurrentGameState currentGameState, String feedbackMessage) {
+        show(loadRoot(fxmlPath, currentGameState, feedbackMessage));
+    }
+
+    private Parent loadRoot(String fxmlPath, CurrentGameState currentGameState, String feedbackMessage) {
+        URL resource = SceneNavigator.class.getResource(fxmlPath);
+        if (resource == null) {
+            throw new IllegalStateException("FXML resource not found: " + fxmlPath);
+        }
+
+        FXMLLoader loader = new FXMLLoader(resource);
+        loader.setControllerFactory(type -> instantiateController(type, currentGameState, feedbackMessage));
+
+        try {
+            return loader.load();
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to load FXML resource: " + fxmlPath, exception);
+        }
+    }
+
+    private Object instantiateController(
+            Class<?> controllerType,
+            CurrentGameState currentGameState,
+            String feedbackMessage
+    ) {
+        if (controllerType == MainMenuController.class) {
+            return new MainMenuController(this, gameService);
+        }
+
+        if (controllerType == LoadSlotsController.class) {
+            return new LoadSlotsController(this, gameService);
+        }
+
+        if (controllerType == GameOverviewController.class) {
+            return new GameOverviewController(
+                    this,
+                    gameService,
+                    Objects.requireNonNull(currentGameState, "currentGameState cannot be null"),
+                    feedbackMessage
+            );
+        }
+
+        throw new IllegalArgumentException("Unsupported controller type: " + controllerType.getName());
     }
 
     private void show(Parent root) {
