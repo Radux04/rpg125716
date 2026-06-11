@@ -22,7 +22,7 @@ class CombatServiceTest {
         Player player = new Player("Hero", 60, 30, 5, 8);
         Slime slime = new Slime();
         AchievementService achievementService = new AchievementService(
-                new AchievementRepository(tempDir.resolve("achievements.json"))
+                new AchievementRepository(tempDir.resolve("achievements.xml"))
         );
         CombatService combatService = new CombatService(achievementService);
 
@@ -39,7 +39,7 @@ class CombatServiceTest {
         Player player = new Player("Hero", 60, 30, 5, 8);
         BossEnemy bossEnemy = new BossEnemy();
         AchievementService achievementService = new AchievementService(
-                new AchievementRepository(tempDir.resolve("boss-achievements.json"))
+                new AchievementRepository(tempDir.resolve("boss-achievements.xml"))
         );
         CombatService combatService = new CombatService(achievementService);
 
