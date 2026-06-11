@@ -2,6 +2,7 @@ package it.unicam.cs.mpgc.rpg125716.service;
 
 import it.unicam.cs.mpgc.rpg125716.controller.GameController;
 import it.unicam.cs.mpgc.rpg125716.model.character.ElementType;
+import it.unicam.cs.mpgc.rpg125716.model.enemy.Enemy;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
 import it.unicam.cs.mpgc.rpg125716.model.item.OriginStone;
 import it.unicam.cs.mpgc.rpg125716.model.item.Potion;
@@ -65,11 +66,40 @@ class GameServiceTest {
         assertTrue(gameService.getCurrentGameState().getPlayer().getInventory().containsItem(new OriginStone()));
 
         gameService.attuneCurrentPlayerToOriginStone(ElementType.FIRE);
+        Player playerBeforeAdvance = gameService.getCurrentGameState().getPlayer();
+        int levelBeforeAdvance = playerBeforeAdvance.getLevel();
+        int maxHpBeforeAdvance = playerBeforeAdvance.getMaxHp();
+        int currentHpBeforeAdvance = playerBeforeAdvance.getCurrentHp();
+        int attackBeforeAdvance = playerBeforeAdvance.getAttack();
+        int defenseBeforeAdvance = playerBeforeAdvance.getDefense();
         CurrentGameState advancedState = gameService.completeCurrentLevel();
 
         assertEquals(2, advancedState.getCurrentLevel().getNumber());
         assertTrue(advancedState.getCompletedLevels().contains("Livello 1 - Tutorial"));
         assertFalse(advancedState.isCurrentLevelStarted());
+        assertEquals(levelBeforeAdvance + 1, advancedState.getPlayer().getLevel());
+        assertEquals(maxHpBeforeAdvance + 10, advancedState.getPlayer().getMaxHp());
+        assertEquals(currentHpBeforeAdvance + 10, advancedState.getPlayer().getCurrentHp());
+        assertEquals(attackBeforeAdvance + 2, advancedState.getPlayer().getAttack());
+        assertEquals(defenseBeforeAdvance + 1, advancedState.getPlayer().getDefense());
+    }
+
+    @Test
+    void attackingCurrentEnemyCanClearTheLevelAndUnlockTheDrop() {
+        GameService gameService = createGameService();
+        gameService.newGame();
+        gameService.startLevel();
+
+        Enemy enemy = gameService.getCurrentGameState().getCurrentLevel().getEnemies().getFirst();
+        while (enemy.isAlive() && gameService.getCurrentGameState().getPlayer().isAlive()) {
+            gameService.attackCurrentLevelEnemy(enemy);
+        }
+
+        assertTrue(gameService.getCurrentGameState().getCurrentLevel().isCompleted());
+
+        gameService.claimCurrentLevelCompletionDrop();
+
+        assertTrue(gameService.getCurrentGameState().getPlayer().getInventory().containsItem(new OriginStone()));
     }
 
     @Test
@@ -89,11 +119,22 @@ class GameServiceTest {
         assertEquals("the player must choose a reward before completing this level", exception.getMessage());
 
         gameService.chooseCurrentLevelReward(LevelRewardChoice.HEALING_POTION);
+        Player playerBeforeAdvance = gameService.getCurrentGameState().getPlayer();
+        int levelBeforeAdvance = playerBeforeAdvance.getLevel();
+        int maxHpBeforeAdvance = playerBeforeAdvance.getMaxHp();
+        int currentHpBeforeAdvance = playerBeforeAdvance.getCurrentHp();
+        int attackBeforeAdvance = playerBeforeAdvance.getAttack();
+        int defenseBeforeAdvance = playerBeforeAdvance.getDefense();
         CurrentGameState advancedState = gameService.completeCurrentLevel();
 
         assertEquals(3, advancedState.getCurrentLevel().getNumber());
         assertTrue(advancedState.getCompletedLevels().contains("Livello 2 - Inseguimento"));
         assertTrue(advancedState.getPlayer().getInventory().containsItem(new Potion("Pozione curativa", "Permette al player di recuperare punti vita.", 25)));
+        assertEquals(levelBeforeAdvance + 1, advancedState.getPlayer().getLevel());
+        assertEquals(maxHpBeforeAdvance + 10, advancedState.getPlayer().getMaxHp());
+        assertEquals(currentHpBeforeAdvance + 10, advancedState.getPlayer().getCurrentHp());
+        assertEquals(attackBeforeAdvance + 2, advancedState.getPlayer().getAttack());
+        assertEquals(defenseBeforeAdvance + 1, advancedState.getPlayer().getDefense());
     }
 
     @Test
