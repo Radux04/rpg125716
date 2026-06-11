@@ -3,27 +3,42 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import java.lang.String?>
 
 <StackPane xmlns="http://javafx.com/javafx/25"
            xmlns:fx="http://javafx.com/fxml/1"
-           fx:controller="it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.MainMenuController"
-           styleClass="app-root">
+           fx:controller="it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.MainMenuController">
+    <styleClass>
+        <String fx:value="app-root" />
+        <String fx:value="main-menu-root" />
+    </styleClass>
     <children>
-        <VBox alignment="CENTER" maxWidth="420.0" spacing="18.0" styleClass="menu-panel">
+        <Pane mouseTransparent="true" styleClass="main-menu-overlay" />
+        <VBox alignment="TOP_CENTER"
+              maxWidth="760.0"
+              spacing="18.0"
+              styleClass="main-menu-hero"
+              StackPane.alignment="TOP_CENTER">
             <padding>
-                <Insets bottom="48.0" left="48.0" right="48.0" top="48.0" />
+                <Insets bottom="0.0" left="48.0" right="48.0" top="56.0" />
             </padding>
             <children>
-                <Label styleClass="eyebrow-label" text="RPG Demo" />
-                <Label styleClass="game-title" text="The Forgotten Gate" wrapText="true" />
-                <Label styleClass="body-label"
-                       text="Varca il portale. Scegli se iniziare una nuova run o riaprire un salvataggio."
-                       textAlignment="CENTER"
-                       wrapText="true" />
-                <Button maxWidth="1.7976931348623157E308"
+                <Label styleClass="game-title" text="The Forgotten Gate" textAlignment="CENTER" wrapText="true" />
+            </children>
+        </VBox>
+        <VBox alignment="BOTTOM_CENTER"
+              maxWidth="360.0"
+              spacing="18.0"
+              styleClass="main-menu-actions"
+              StackPane.alignment="BOTTOM_CENTER">
+            <padding>
+                <Insets bottom="60.0" left="32.0" right="32.0" top="0.0" />
+            </padding>
+            <children>
+                <Button maxWidth="320.0"
                         mnemonicParsing="false"
                         onAction="#handleNewGame"
                         text="Nuova Partita">
@@ -32,7 +47,7 @@
                         <String fx:value="primary-button" />
                     </styleClass>
                 </Button>
-                <Button maxWidth="1.7976931348623157E308"
+                <Button maxWidth="320.0"
                         mnemonicParsing="false"
                         onAction="#handleLoadGame"
                         text="Carica Partita">

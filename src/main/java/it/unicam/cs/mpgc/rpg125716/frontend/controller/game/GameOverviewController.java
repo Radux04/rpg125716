@@ -17,8 +17,6 @@ public class GameOverviewController {
     private final String initialFeedbackMessage;
 
     @FXML
-    private Label subtitleLabel;
-    @FXML
     private Label slotBadgeLabel;
     @FXML
     private Label playerNameValueLabel;
@@ -109,7 +107,6 @@ public class GameOverviewController {
     }
 
     private void refreshView() {
-        subtitleLabel.setText(buildSubtitle());
         slotBadgeLabel.setText(buildSlotBadge());
 
         playerNameValueLabel.setText(currentGameState.getPlayer().getName());
@@ -136,14 +133,6 @@ public class GameOverviewController {
         if (initialFeedbackMessage != null && !initialFeedbackMessage.isBlank()) {
             feedbackLabel.setText(initialFeedbackMessage);
         }
-    }
-
-    private String buildSubtitle() {
-        if (currentGameState.isDemoCompleted()) {
-            return "La demo e completa. Puoi comunque rivedere il riepilogo o salvare la run.";
-        }
-
-        return "La sessione backend e pronta. Da qui puoi entrare nel livello corrente o salvare la partita.";
     }
 
     private String buildSlotBadge() {

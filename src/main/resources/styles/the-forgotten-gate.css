@@ -1,19 +1,123 @@
 .root {
-    -fx-font-family: "Segoe UI", "Verdana", sans-serif;
+    -fx-font-family: "Manrope", "Segoe UI", "Verdana", sans-serif;
 }
 
 .app-root {
     -fx-background-color:
-            radial-gradient(center 50% 20%, radius 85%, rgba(97, 76, 48, 0.28), transparent 55%),
-            linear-gradient(to bottom, #1d1821 0%, #131017 45%, #0d0a10 100%);
+            radial-gradient(center 50% 20%, radius 85%, rgba(212, 175, 55, 0.14), transparent 55%),
+            linear-gradient(to bottom, #191522 0%, #120f18 45%, #0d0b10 100%);
+}
+
+.main-menu-root {
+    -fx-background-color: #0d0b10;
+    -fx-background-image: url("../images/main-menu-background.png");
+    -fx-background-size: contain;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
+}
+
+.main-menu-overlay {
+    -fx-background-color:
+            linear-gradient(to bottom, rgba(13, 11, 16, 0.12) 0%, rgba(13, 11, 16, 0.05) 24%, rgba(13, 11, 16, 0.16) 100%),
+            radial-gradient(center 50% 36%, radius 58%, rgba(13, 11, 16, 0.00), rgba(13, 11, 16, 0.20) 100%);
+}
+
+.main-menu-hero,
+.main-menu-actions {
+    -fx-background-color: transparent;
+}
+
+.main-menu-hero {
+    -fx-effect: dropshadow(gaussian, rgba(13, 11, 16, 0.50), 22, 0.20, 0, 6);
+}
+
+.subscreen-root {
+    -fx-background-color: #0d0b10;
+}
+
+.blurred-background {
+    -fx-background-color: #0d0b10;
+    -fx-background-image: url("../images/main-menu-background.png");
+    -fx-background-size: contain;
+    -fx-background-position: center center;
+    -fx-background-repeat: no-repeat;
+}
+
+.subscreen-overlay {
+    -fx-background-color:
+            linear-gradient(to bottom, rgba(13, 11, 16, 0.50) 0%, rgba(13, 11, 16, 0.34) 28%, rgba(13, 11, 16, 0.58) 100%),
+            radial-gradient(center 50% 40%, radius 60%, rgba(50, 38, 73, 0.12), rgba(13, 11, 16, 0.34) 100%);
+}
+
+.subscreen-content {
+    -fx-background-color: transparent;
+}
+
+.dialog-pane.themed-dialog {
+    -fx-background-color: rgba(23, 19, 31, 0.98);
+    -fx-background-radius: 24;
+    -fx-border-color: rgba(175, 168, 186, 0.26);
+    -fx-border-radius: 24;
+    -fx-border-width: 1;
+}
+
+.dialog-pane.themed-dialog > .content.label {
+    -fx-text-fill: #afa8ba;
+}
+
+.dialog-content {
+    -fx-background-color: transparent;
+    -fx-padding: 22 24 8 24;
+}
+
+.dialog-title {
+    -fx-font-family: "Libre Caslon Text", "Georgia", serif;
+    -fx-font-size: 30px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #f1edf8;
+}
+
+.dialog-body {
+    -fx-font-size: 15px;
+    -fx-text-fill: #afa8ba;
+    -fx-line-spacing: 3px;
+}
+
+.dialog-text-field {
+    -fx-background-color: rgba(13, 11, 16, 0.96);
+    -fx-background-insets: 0;
+    -fx-background-radius: 18;
+    -fx-border-color: rgba(107, 63, 160, 0.62);
+    -fx-border-radius: 18;
+    -fx-border-width: 1;
+    -fx-font-size: 16px;
+    -fx-padding: 14 16 14 16;
+    -fx-prompt-text-fill: #958ea1;
+    -fx-text-fill: #f1edf8;
+    -fx-highlight-fill: rgba(107, 63, 160, 0.55);
+    -fx-highlight-text-fill: #f1edf8;
+}
+
+.dialog-text-field:focused {
+    -fx-border-color: rgba(212, 175, 55, 0.72);
+}
+
+.dialog-pane.themed-dialog > .button-bar > .container {
+    -fx-background-color: transparent;
+    -fx-padding: 0 24 24 24;
+    -fx-spacing: 12;
+}
+
+.dialog-action-button {
+    -fx-min-width: 132px;
 }
 
 .menu-panel,
 .content-card,
 .slot-card {
-    -fx-background-color: rgba(23, 18, 28, 0.88);
+    -fx-background-color: rgba(23, 19, 31, 0.90);
     -fx-background-radius: 18;
-    -fx-border-color: rgba(203, 162, 95, 0.42);
+    -fx-border-color: rgba(175, 168, 186, 0.22);
     -fx-border-radius: 18;
     -fx-border-width: 1;
 }
@@ -23,10 +127,11 @@
 }
 
 .eyebrow-label {
-    -fx-text-fill: #c5a670;
+    -fx-font-family: "Space Grotesk", "Segoe UI Semibold", sans-serif;
+    -fx-text-fill: #d4af37;
     -fx-font-size: 14px;
     -fx-font-weight: 700;
-    -fx-letter-spacing: 1.4px;
+    -fx-letter-spacing: 2.2px;
 }
 
 .game-title,
@@ -35,18 +140,20 @@
 .slot-title,
 .slot-badge,
 .stat-pill-value {
-    -fx-text-fill: #f3e7cb;
+    -fx-text-fill: #f1edf8;
 }
 
 .game-title {
-    -fx-font-size: 40px;
-    -fx-font-weight: 800;
+    -fx-font-family: "Libre Caslon Text", "Georgia", serif;
+    -fx-font-size: 64px;
+    -fx-font-weight: 700;
     -fx-text-alignment: center;
 }
 
 .section-title {
-    -fx-font-size: 30px;
-    -fx-font-weight: 800;
+    -fx-font-family: "Libre Caslon Text", "Georgia", serif;
+    -fx-font-size: 34px;
+    -fx-font-weight: 700;
 }
 
 .card-title,
@@ -56,18 +163,18 @@
 }
 
 .body-label {
-    -fx-text-fill: #d4c9b4;
-    -fx-font-size: 15px;
-    -fx-line-spacing: 2px;
+    -fx-text-fill: #afa8ba;
+    -fx-font-size: 16px;
+    -fx-line-spacing: 3px;
 }
 
 .muted-label {
-    -fx-text-fill: #a6947a;
+    -fx-text-fill: #958ea1;
     -fx-font-size: 13px;
 }
 
 .feedback-label {
-    -fx-text-fill: #f4cb7e;
+    -fx-text-fill: #d4af37;
     -fx-font-size: 14px;
 }
 
@@ -76,8 +183,8 @@
 }
 
 .slot-card:hover {
-    -fx-background-color: rgba(36, 28, 43, 0.94);
-    -fx-border-color: rgba(223, 185, 115, 0.58);
+    -fx-background-color: rgba(38, 31, 49, 0.94);
+    -fx-border-color: rgba(107, 63, 160, 0.58);
 }
 
 .slot-card-empty {
@@ -89,32 +196,34 @@
 }
 
 .menu-button {
+    -fx-font-family: "Space Grotesk", "Segoe UI Semibold", sans-serif;
     -fx-font-size: 15px;
     -fx-font-weight: 700;
-    -fx-padding: 14 22 14 22;
-    -fx-background-radius: 12;
-    -fx-border-radius: 12;
+    -fx-padding: 15 24 15 24;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
     -fx-cursor: hand;
+    -fx-border-width: 1;
 }
 
 .primary-button {
-    -fx-background-color: linear-gradient(to bottom, #a77931 0%, #7c5420 100%);
-    -fx-text-fill: #fff4df;
-    -fx-border-color: rgba(255, 223, 172, 0.28);
+    -fx-background-color: linear-gradient(to bottom, #e1bf49 0%, #d4af37 100%);
+    -fx-text-fill: #0d0b10;
+    -fx-border-color: rgba(255, 244, 210, 0.42);
 }
 
 .primary-button:hover {
-    -fx-background-color: linear-gradient(to bottom, #bb8940 0%, #8c6027 100%);
+    -fx-background-color: linear-gradient(to bottom, #ead06c 0%, #ddb640 100%);
 }
 
 .secondary-button {
-    -fx-background-color: rgba(67, 54, 79, 0.92);
-    -fx-text-fill: #efe2cc;
-    -fx-border-color: rgba(203, 162, 95, 0.34);
+    -fx-background-color: rgba(107, 63, 160, 0.92);
+    -fx-text-fill: #f3eff8;
+    -fx-border-color: rgba(209, 190, 236, 0.34);
 }
 
 .secondary-button:hover {
-    -fx-background-color: rgba(84, 67, 101, 0.96);
+    -fx-background-color: rgba(124, 77, 181, 0.96);
 }
 
 .menu-button:disabled,
@@ -135,19 +244,19 @@
 }
 
 .slot-state-filled {
-    -fx-text-fill: #dcb579;
+    -fx-text-fill: #d4af37;
 }
 
 .slot-state-empty {
-    -fx-text-fill: #b89976;
+    -fx-text-fill: #afa8ba;
 }
 
 .slot-action-label {
-    -fx-text-fill: #f3e7cb;
+    -fx-text-fill: #f1edf8;
 }
 
 .slot-badge {
-    -fx-background-color: rgba(169, 121, 49, 0.18);
+    -fx-background-color: rgba(107, 63, 160, 0.22);
     -fx-background-radius: 999;
     -fx-padding: 10 16 10 16;
     -fx-font-size: 13px;
@@ -155,14 +264,14 @@
 }
 
 .stat-pill {
-    -fx-background-color: rgba(92, 67, 43, 0.24);
+    -fx-background-color: rgba(33, 29, 40, 0.52);
     -fx-background-radius: 14;
-    -fx-border-color: rgba(203, 162, 95, 0.18);
+    -fx-border-color: rgba(175, 168, 186, 0.18);
     -fx-border-radius: 14;
 }
 
 .stat-pill-label {
-    -fx-text-fill: #b8a789;
+    -fx-text-fill: #afa8ba;
     -fx-font-size: 12px;
     -fx-font-weight: 700;
 }
