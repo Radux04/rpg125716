@@ -3,29 +3,38 @@ package it.unicam.cs.mpgc.rpg125716;
 import it.unicam.cs.mpgc.rpg125716.frontend.scene.SceneNavigator;
 import it.unicam.cs.mpgc.rpg125716.service.GameService;
 import javafx.application.Application;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 public class FrontendApplication extends Application {
-    private static final double WINDOW_WIDTH = 1840;
-    private static final double WINDOW_HEIGHT = 1020;
-
     @Override
     public void start(Stage stage) {
+        Rectangle2D primaryScreenBounds = Screen.getPrimary().getBounds();
+        double windowWidth = primaryScreenBounds.getWidth();
+        double windowHeight = primaryScreenBounds.getHeight();
+
         stage.setTitle("The Forgotten Gate");
-        stage.setMinWidth(WINDOW_WIDTH);
-        stage.setMinHeight(WINDOW_HEIGHT);
-        stage.setMaxWidth(WINDOW_WIDTH);
-        stage.setMaxHeight(WINDOW_HEIGHT);
+        stage.setWidth(windowWidth);
+        stage.setHeight(windowHeight);
+        stage.setMinWidth(windowWidth);
+        stage.setMinHeight(windowHeight);
+        stage.setMaxWidth(windowWidth);
+        stage.setMaxHeight(windowHeight);
         stage.setResizable(false);
+        stage.setFullScreenExitHint("");
+        stage.setFullScreenExitKeyCombination(new KeyCodeCombination(KeyCode.ESCAPE));
 
         SceneNavigator sceneNavigator = new SceneNavigator(
                 stage,
                 new GameService(),
-                WINDOW_WIDTH,
-                WINDOW_HEIGHT
+                windowWidth,
+                windowHeight
         );
         sceneNavigator.showMainMenu();
         stage.show();
-        stage.centerOnScreen();
+        stage.setFullScreen(true);
     }
 }
