@@ -423,10 +423,6 @@ public class GameViewController {
         attackCooldownRemaining = Math.max(0, attackCooldownRemaining - deltaSeconds);
         updateHud();
         renderDynamicScene();
-
-        if (inventoryOverlayOpen) {
-            renderInventoryOverlay();
-        }
     }
 
     private void updatePlayerMovement(double deltaSeconds) {
