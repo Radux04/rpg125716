@@ -106,6 +106,25 @@
                                         </FlowPane>
                                     </children>
                                 </VBox>
+                                <VBox maxWidth="430.0" spacing="6.0">
+                                    <styleClass>
+                                        <String fx:value="hud-card" />
+                                        <String fx:value="game-top-card" />
+                                    </styleClass>
+                                    <children>
+                                        <Label styleClass="card-title" text="Bersaglio" />
+                                        <Label fx:id="selectedEnemyLabel" text="Nessun bersaglio">
+                                            <styleClass>
+                                                <String fx:value="hud-main-value" />
+                                                <String fx:value="compact-main-value" />
+                                            </styleClass>
+                                        </Label>
+                                        <Label fx:id="selectedEnemyStatsLabel"
+                                               styleClass="body-label"
+                                               text="Seleziona un nemico sulla mappa."
+                                               wrapText="true" />
+                                    </children>
+                                </VBox>
                             </children>
                         </VBox>
                     </right>
@@ -126,33 +145,9 @@
             <bottom>
                 <VBox spacing="8.0">
                     <children>
-                        <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="bottom-panel-row">
+                        <VBox spacing="6.0">
                             <children>
-                                <VBox prefWidth="320.0" spacing="6.0" HBox.hgrow="ALWAYS">
-                                    <styleClass>
-                                        <String fx:value="hud-card" />
-                                        <String fx:value="bottom-panel-card" />
-                                    </styleClass>
-                                    <children>
-                                        <Label styleClass="card-title" text="Bersaglio" />
-                                        <HBox alignment="CENTER_LEFT" spacing="12.0">
-                                            <children>
-                                                <Label fx:id="selectedEnemyLabel" text="Nessun bersaglio">
-                                                    <styleClass>
-                                                        <String fx:value="hud-main-value" />
-                                                        <String fx:value="compact-main-value" />
-                                                    </styleClass>
-                                                </Label>
-                                                <Label fx:id="selectedEnemyStatsLabel"
-                                                       styleClass="body-label"
-                                                       text="Seleziona un nemico sulla mappa."
-                                                       wrapText="true" />
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </VBox>
-
-                                <VBox prefWidth="1110.0" spacing="6.0" HBox.hgrow="ALWAYS">
+                                <VBox prefWidth="1440.0" spacing="6.0">
                                     <styleClass>
                                         <String fx:value="hud-card" />
                                         <String fx:value="bottom-panel-card" />
@@ -213,7 +208,7 @@
                                     </children>
                                 </VBox>
                             </children>
-                        </HBox>
+                        </VBox>
                     </children>
                 </VBox>
             </bottom>

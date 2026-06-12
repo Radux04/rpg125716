@@ -58,6 +58,9 @@ public class GameViewController {
     private static final Color TILE_COLOR = Color.web("#1e1826");
     private static final Color TILE_ALT_COLOR = Color.web("#231c2d");
     private static final Color WALL_COLOR = Color.web("#0f0c14");
+    private static final Color FOREST_TILE_COLOR = Color.web("#355c3a");
+    private static final Color FOREST_TILE_ALT_COLOR = Color.web("#427347");
+    private static final Color FOREST_WALL_COLOR = Color.web("#1f3624");
     private static final Color PLAYER_COLOR = Color.web("#d4af37");
     private static final Color PLAYER_INNER_COLOR = Color.web("#6b3fa0");
     private static final Color DROP_COLOR = Color.web("#d4af37");
@@ -340,6 +343,7 @@ public class GameViewController {
     }
 
     private void renderBoardTiles() {
+        BoardPalette boardPalette = resolveBoardPalette();
         int columns = (int) Math.ceil(BOARD_WIDTH / TILE_SIZE);
         int rows = (int) Math.ceil(BOARD_HEIGHT / TILE_SIZE);
 
@@ -348,7 +352,9 @@ public class GameViewController {
                 Rectangle tile = new Rectangle(TILE_SIZE - 3, TILE_SIZE - 3);
                 tile.setArcWidth(12);
                 tile.setArcHeight(12);
-                tile.setFill((row + column) % 2 == 0 ? TILE_COLOR : TILE_ALT_COLOR);
+                tile.setFill((row + column) % 2 == 0
+                        ? boardPalette.primaryTileColor()
+                        : boardPalette.secondaryTileColor());
                 tile.setLayoutX(column * TILE_SIZE);
                 tile.setLayoutY(row * TILE_SIZE);
                 gameBoardPane.getChildren().add(tile);
@@ -357,11 +363,19 @@ public class GameViewController {
 
         Rectangle border = new Rectangle(BOARD_WIDTH, BOARD_HEIGHT);
         border.setFill(Color.TRANSPARENT);
-        border.setStroke(WALL_COLOR);
+        border.setStroke(boardPalette.borderColor());
         border.setStrokeWidth(10);
         border.setArcWidth(32);
         border.setArcHeight(32);
         gameBoardPane.getChildren().add(border);
+    }
+
+    private BoardPalette resolveBoardPalette() {
+        if (currentGameState.getCurrentLevel().getNumber() == 1) {
+            return new BoardPalette(FOREST_TILE_COLOR, FOREST_TILE_ALT_COLOR, FOREST_WALL_COLOR);
+        }
+
+        return new BoardPalette(TILE_COLOR, TILE_ALT_COLOR, WALL_COLOR);
     }
 
     private void renderDoorNode() {
@@ -741,5 +755,8 @@ public class GameViewController {
         }
 
         return new Image(stream);
+    }
+
+    private record BoardPalette(Color primaryTileColor, Color secondaryTileColor, Color borderColor) {
     }
 }
