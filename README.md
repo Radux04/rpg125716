@@ -13,19 +13,13 @@ Prerequisiti:
 Per avviare il gioco:
 
 ```powershell
-.\gradlew.bat run
+.\gradlew run
 ```
 
 Per compilare il progetto:
 
 ```powershell
-.\gradlew.bat build
-```
-
-Per eseguire i test:
-
-```powershell
-.\gradlew.bat test
+.\gradlew build
 ```
 
 ## Uso di strumenti di AI
