@@ -138,8 +138,6 @@ public class GameViewController {
     @FXML
     private Label playerElementHudLabel;
     @FXML
-    private Label controlsHintLabel;
-    @FXML
     private Label contextualHintLabel;
     @FXML
     private Label remainingEnemiesHudLabel;
@@ -597,7 +595,6 @@ public class GameViewController {
                         + "  DEF " + currentGameState.getPlayer().getDefense()
                         + "  SPD " + currentGameState.getPlayer().getSpeed()
         );
-        controlsHintLabel.setText(buildControlsHintText());
         contextualHintLabel.setText(buildContextualHintText());
         playerElementHudLabel.setText(
                 currentGameState.getPlayer().getElementType() == null
@@ -1054,16 +1051,6 @@ public class GameViewController {
         return isPlayerNearDoor()
                 ? "La porta e aperta. Attraversala per raggiungere il prossimo livello."
                 : "La porta e aperta: raggiungila per accedere al prossimo livello.";
-    }
-
-    private String buildControlsHintText() {
-        return String.join(
-                System.lineSeparator(),
-                "WASD / Frecce: Muovi",
-                "Space / Invio: Attacca",
-                "E: Interagisci",
-                "M: Inventario"
-        );
     }
 
     private String buildContextualHintText() {

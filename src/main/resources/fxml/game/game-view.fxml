@@ -68,11 +68,14 @@
                                 <Label fx:id="playerStatsHudLabel" styleClass="body-label" text="ATK 10  DEF 5  SPD 8" wrapText="true" />
                                 <Label fx:id="playerElementHudLabel" styleClass="muted-label" text="Elemento non scelto" wrapText="true" />
                                 <Label styleClass="muted-label" text="M-Inventario" wrapText="true" />
-                                <Label fx:id="controlsHintLabel"
-                                       maxWidth="394.0"
-                                       styleClass="body-label"
-                                       text="WASD / Frecce: Muovi"
-                                       wrapText="true" />
+                                <VBox maxWidth="394.0" spacing="2.0">
+                                    <children>
+                                        <Label styleClass="muted-label" text="WASD / Frecce - Muovi" wrapText="true" />
+                                        <Label styleClass="muted-label" text="Space / Invio - Attacca" wrapText="true" />
+                                        <Label styleClass="muted-label" text="E - Interagisci" wrapText="true" />
+                                        <Label styleClass="muted-label" text="M - Inventario" wrapText="true" />
+                                    </children>
+                                </VBox>
                                 <Label fx:id="contextualHintLabel"
                                        maxWidth="394.0"
                                        styleClass="muted-label"
