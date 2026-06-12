@@ -99,7 +99,11 @@ public class GameViewController {
     private static final Color FOREST_TREE_TILE_ALT_COLOR = Color.web("#6b523c");
     private static final Color FOREST_WALL_COLOR = Color.web("#1f3624");
     private static final Color PLAYER_COLOR = Color.web("#d4af37");
-    private static final Color PLAYER_INNER_COLOR = Color.web("#6b3fa0");
+    private static final Color PLAYER_INNER_COLOR = Color.web("#16111f");
+    private static final Color PLAYER_FIRE_AURA_COLOR = Color.web("#cf3c2f");
+    private static final Color PLAYER_WATER_AURA_COLOR = Color.web("#2d78d2");
+    private static final Color PLAYER_WIND_AURA_COLOR = Color.web("#3f9c4b");
+    private static final Color PLAYER_EARTH_AURA_COLOR = Color.web("#6f4a2e");
     private static final Color DROP_COLOR = Color.web("#d4af37");
     private static final Color REWARD_COLOR = Color.web("#6b3fa0");
     private static final Color DOOR_LOCKED_COLOR = Color.web("#41304d");
@@ -138,6 +142,8 @@ public class GameViewController {
     private Scene boundScene;
     private AnimationTimer gameLoop;
     private Pane boardContentPane;
+    private Circle playerAuraCircle;
+    private Circle playerCoreCircle;
     private StackPane playerNode;
     private StackPane doorNode;
     private Rectangle doorPortal;
@@ -1025,18 +1031,18 @@ public class GameViewController {
         builtPlayerNode.getStyleClass().add("board-player");
         builtPlayerNode.setPrefSize(PLAYER_NODE_SIZE, PLAYER_NODE_SIZE);
 
-        Circle outer = new Circle(42, PLAYER_COLOR);
-        outer.setOpacity(0.28);
-        Circle inner = new Circle(31, PLAYER_INNER_COLOR);
-        inner.setStroke(PLAYER_COLOR);
-        inner.setStrokeWidth(3);
+        playerAuraCircle = new Circle(42, PLAYER_COLOR);
+        playerAuraCircle.setOpacity(0.28);
+        playerCoreCircle = new Circle(31, PLAYER_INNER_COLOR);
+        playerCoreCircle.setStroke(PLAYER_COLOR);
+        playerCoreCircle.setStrokeWidth(3);
 
         String playerName = currentGameState.getPlayer().getName();
         String playerInitial = (playerName == null || playerName.isBlank()) ? "?" : playerName.substring(0, 1).toUpperCase();
         Label label = new Label(playerInitial);
         label.getStyleClass().add("board-player-label");
 
-        builtPlayerNode.getChildren().addAll(outer, inner, label);
+        builtPlayerNode.getChildren().addAll(playerAuraCircle, playerCoreCircle, label);
         return builtPlayerNode;
     }
 
@@ -1174,6 +1180,9 @@ public class GameViewController {
     }
 
     private void renderPlayerNodeState() {
+        Color playerAuraColor = resolvePlayerAuraColor();
+        playerAuraCircle.setFill(playerAuraColor);
+        playerCoreCircle.setStroke(playerAuraColor);
         playerNode.setLayoutX(playerPosition.getX() - (PLAYER_NODE_SIZE / 2));
         playerNode.setLayoutY(playerPosition.getY() - (PLAYER_NODE_SIZE / 2));
         playerNode.toFront();
@@ -1873,6 +1882,20 @@ public class GameViewController {
             case WATER -> "WATER - Onda di spinta";
             case WIND -> "WIND - Tornado";
             case EARTH -> "HEART - Cura totale";
+        };
+    }
+
+    private Color resolvePlayerAuraColor() {
+        ElementType elementType = currentGameState.getPlayer().getElementType();
+        if (elementType == null) {
+            return PLAYER_COLOR;
+        }
+
+        return switch (elementType) {
+            case FIRE -> PLAYER_FIRE_AURA_COLOR;
+            case WATER -> PLAYER_WATER_AURA_COLOR;
+            case WIND -> PLAYER_WIND_AURA_COLOR;
+            case EARTH -> PLAYER_EARTH_AURA_COLOR;
         };
     }
 
