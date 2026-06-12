@@ -54,8 +54,8 @@ import java.util.StringJoiner;
 import java.util.Set;
 
 public class GameViewController {
-    private static final double BOARD_WIDTH = 1720;
-    private static final double BOARD_HEIGHT = 620;
+    private static final double BOARD_WIDTH = 1600;
+    private static final double BOARD_HEIGHT = 540;
     private static final double TILE_SIZE = 102;
     private static final double PLAYER_NODE_SIZE = 116;
     private static final double ITEM_NODE_SIZE = 102;
@@ -79,6 +79,8 @@ public class GameViewController {
     private static final Color WALL_COLOR = Color.web("#0f0c14");
     private static final Color FOREST_TILE_COLOR = Color.web("#355c3a");
     private static final Color FOREST_TILE_ALT_COLOR = Color.web("#427347");
+    private static final Color FOREST_TREE_TILE_COLOR = Color.web("#5a4330");
+    private static final Color FOREST_TREE_TILE_ALT_COLOR = Color.web("#6b523c");
     private static final Color FOREST_WALL_COLOR = Color.web("#1f3624");
     private static final Color PLAYER_COLOR = Color.web("#d4af37");
     private static final Color PLAYER_INNER_COLOR = Color.web("#6b3fa0");
@@ -627,17 +629,15 @@ public class GameViewController {
 
     private void renderBoardTiles() {
         BoardPalette boardPalette = resolveBoardPalette();
-        int columns = (int) Math.ceil(BOARD_WIDTH / TILE_SIZE);
-        int rows = (int) Math.ceil(BOARD_HEIGHT / TILE_SIZE);
+        int columns = Math.max(1, (int) Math.floor(BOARD_WIDTH / TILE_SIZE));
+        int rows = Math.max(1, (int) Math.floor(BOARD_HEIGHT / TILE_SIZE));
 
         for (int row = 0; row < rows; row++) {
             for (int column = 0; column < columns; column++) {
                 Rectangle tile = new Rectangle(TILE_SIZE - 3, TILE_SIZE - 3);
                 tile.setArcWidth(12);
                 tile.setArcHeight(12);
-                tile.setFill((row + column) % 2 == 0
-                        ? boardPalette.primaryTileColor()
-                        : boardPalette.secondaryTileColor());
+                tile.setFill(resolveBoardTileColor(boardPalette, row, column, rows, columns));
                 tile.setLayoutX(column * TILE_SIZE);
                 tile.setLayoutY(row * TILE_SIZE);
                 gameBoardPane.getChildren().add(tile);
@@ -659,6 +659,23 @@ public class GameViewController {
         }
 
         return new BoardPalette(TILE_COLOR, TILE_ALT_COLOR, WALL_COLOR);
+    }
+
+    private Color resolveBoardTileColor(BoardPalette boardPalette, int row, int column, int rows, int columns) {
+        if (currentGameState.getCurrentLevel().getNumber() == 1 && isForestTreeTile(row, column, rows, columns)) {
+            return (row + column) % 2 == 0 ? FOREST_TREE_TILE_COLOR : FOREST_TREE_TILE_ALT_COLOR;
+        }
+
+        return (row + column) % 2 == 0
+                ? boardPalette.primaryTileColor()
+                : boardPalette.secondaryTileColor();
+    }
+
+    private boolean isForestTreeTile(int row, int column, int rows, int columns) {
+        boolean leftGrove = column <= 1 && (row <= 1 || row >= rows - 2);
+        boolean rightGrove = column >= columns - 2 && (row == 1 || row == rows - 2);
+        boolean bottomPatch = row == rows - 1 && column >= 5 && column <= 7;
+        return leftGrove || rightGrove || bottomPatch;
     }
 
     private StackPane buildDoorNode() {
