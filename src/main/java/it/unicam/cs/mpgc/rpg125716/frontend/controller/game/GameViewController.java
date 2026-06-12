@@ -28,8 +28,12 @@ import javafx.geometry.Point2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelReader;
+import javafx.scene.image.PixelWriter;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
@@ -69,6 +73,7 @@ public class GameViewController {
     private static final double DOOR_NODE_WIDTH = 104;
     private static final double DOOR_NODE_HEIGHT = 136;
     private static final String ORIGIN_STONE_DROP_SPRITE_PATH = "/images/items/origin-stone-drop.png";
+    private static final String PLAYER_SPRITE_PATH = "/images/player/hero-player-source.png";
     private static final Point2D PLAYER_START_POSITION = new Point2D(258, (BOARD_HEIGHT / 2) + 6);
     private static final Point2D ITEM_POSITION = new Point2D((BOARD_WIDTH / 2) - 46, BOARD_HEIGHT - 165);
     private static final Point2D DOOR_POSITION = new Point2D(BOARD_WIDTH - 170, (TILE_SIZE * 2) - 17);
@@ -100,7 +105,6 @@ public class GameViewController {
     private static final Color FOREST_TREE_TILE_ALT_COLOR = Color.web("#6b523c");
     private static final Color FOREST_WALL_COLOR = Color.web("#1f3624");
     private static final Color PLAYER_COLOR = Color.web("#d4af37");
-    private static final Color PLAYER_INNER_COLOR = Color.web("#16111f");
     private static final Color PLAYER_FIRE_AURA_COLOR = Color.web("#cf3c2f");
     private static final Color PLAYER_WATER_AURA_COLOR = Color.web("#2d78d2");
     private static final Color PLAYER_WIND_AURA_COLOR = Color.web("#3f9c4b");
@@ -143,8 +147,7 @@ public class GameViewController {
     private Scene boundScene;
     private AnimationTimer gameLoop;
     private Pane boardContentPane;
-    private Circle playerAuraCircle;
-    private Circle playerCoreCircle;
+    private ImageView playerSpriteView;
     private StackPane playerNode;
     private StackPane doorNode;
     private Rectangle doorPortal;
@@ -1031,19 +1034,15 @@ public class GameViewController {
         StackPane builtPlayerNode = new StackPane();
         builtPlayerNode.getStyleClass().add("board-player");
         builtPlayerNode.setPrefSize(PLAYER_NODE_SIZE, PLAYER_NODE_SIZE);
+        builtPlayerNode.setPickOnBounds(false);
 
-        playerAuraCircle = new Circle(42, PLAYER_COLOR);
-        playerAuraCircle.setOpacity(0.28);
-        playerCoreCircle = new Circle(31, PLAYER_INNER_COLOR);
-        playerCoreCircle.setStroke(PLAYER_COLOR);
-        playerCoreCircle.setStrokeWidth(3);
+        playerSpriteView = new ImageView(loadPlayerSprite());
+        playerSpriteView.setFitWidth(128);
+        playerSpriteView.setFitHeight(128);
+        playerSpriteView.setPreserveRatio(true);
+        playerSpriteView.setSmooth(true);
 
-        String playerName = currentGameState.getPlayer().getName();
-        String playerInitial = (playerName == null || playerName.isBlank()) ? "?" : playerName.substring(0, 1).toUpperCase();
-        Label label = new Label(playerInitial);
-        label.getStyleClass().add("board-player-label");
-
-        builtPlayerNode.getChildren().addAll(playerAuraCircle, playerCoreCircle, label);
+        builtPlayerNode.getChildren().add(playerSpriteView);
         return builtPlayerNode;
     }
 
@@ -1182,8 +1181,7 @@ public class GameViewController {
 
     private void renderPlayerNodeState() {
         Color playerAuraColor = resolvePlayerAuraColor();
-        playerAuraCircle.setFill(playerAuraColor);
-        playerCoreCircle.setStroke(playerAuraColor);
+        playerSpriteView.setEffect(buildPlayerSpriteAuraEffect(playerAuraColor));
         playerNode.setLayoutX(playerPosition.getX() - (PLAYER_NODE_SIZE / 2));
         playerNode.setLayoutY(playerPosition.getY() - (PLAYER_NODE_SIZE / 2));
         playerNode.toFront();
@@ -1901,7 +1899,7 @@ public class GameViewController {
     private Color resolvePlayerAuraColor() {
         ElementType elementType = currentGameState.getPlayer().getElementType();
         if (elementType == null) {
-            return PLAYER_COLOR;
+            return null;
         }
 
         return switch (elementType) {
@@ -1910,6 +1908,28 @@ public class GameViewController {
             case WIND -> PLAYER_WIND_AURA_COLOR;
             case EARTH -> PLAYER_EARTH_AURA_COLOR;
         };
+    }
+
+    private DropShadow buildPlayerSpriteAuraEffect(Color auraColor) {
+        if (auraColor == null) {
+            return null;
+        }
+
+        DropShadow innerGlow = new DropShadow();
+        innerGlow.setColor(auraColor.deriveColor(0, 1, 1, 0.90));
+        innerGlow.setRadius(10);
+        innerGlow.setSpread(0.55);
+        innerGlow.setOffsetX(0);
+        innerGlow.setOffsetY(0);
+
+        DropShadow outerGlow = new DropShadow();
+        outerGlow.setColor(auraColor.deriveColor(0, 1, 0.92, 0.96));
+        outerGlow.setRadius(20);
+        outerGlow.setSpread(0.68);
+        outerGlow.setOffsetX(0);
+        outerGlow.setOffsetY(0);
+        outerGlow.setInput(innerGlow);
+        return outerGlow;
     }
 
     private Point2D resolveMovementDirection() {
@@ -2172,6 +2192,94 @@ public class GameViewController {
         }
 
         return new Image(stream);
+    }
+
+    private Image loadPlayerSprite() {
+        InputStream stream = GameViewController.class.getResourceAsStream(PLAYER_SPRITE_PATH);
+        if (stream == null) {
+            throw new IllegalStateException("Sprite resource not found: " + PLAYER_SPRITE_PATH);
+        }
+
+        Image sourceImage = new Image(stream);
+        PixelReader pixelReader = sourceImage.getPixelReader();
+        if (pixelReader == null) {
+            return sourceImage;
+        }
+
+        int width = (int) Math.round(sourceImage.getWidth());
+        int height = (int) Math.round(sourceImage.getHeight());
+        WritableImage cleanedImage = new WritableImage(width, height);
+        PixelWriter pixelWriter = cleanedImage.getPixelWriter();
+
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                pixelWriter.setColor(x, y, pixelReader.getColor(x, y));
+            }
+        }
+
+        boolean[] visited = new boolean[width * height];
+        int[] queue = new int[width * height];
+        int head = 0;
+        int tail = 0;
+
+        for (int x = 0; x < width; x++) {
+            tail = enqueueTransparentBackgroundPixel(pixelReader, visited, queue, tail, width, height, x, 0);
+            tail = enqueueTransparentBackgroundPixel(pixelReader, visited, queue, tail, width, height, x, height - 1);
+        }
+        for (int y = 0; y < height; y++) {
+            tail = enqueueTransparentBackgroundPixel(pixelReader, visited, queue, tail, width, height, 0, y);
+            tail = enqueueTransparentBackgroundPixel(pixelReader, visited, queue, tail, width, height, width - 1, y);
+        }
+
+        while (head < tail) {
+            int index = queue[head++];
+            int x = index % width;
+            int y = index / width;
+            pixelWriter.setColor(x, y, Color.TRANSPARENT);
+
+            tail = enqueueTransparentBackgroundPixel(pixelReader, visited, queue, tail, width, height, x + 1, y);
+            tail = enqueueTransparentBackgroundPixel(pixelReader, visited, queue, tail, width, height, x - 1, y);
+            tail = enqueueTransparentBackgroundPixel(pixelReader, visited, queue, tail, width, height, x, y + 1);
+            tail = enqueueTransparentBackgroundPixel(pixelReader, visited, queue, tail, width, height, x, y - 1);
+        }
+
+        return cleanedImage;
+    }
+
+    private int enqueueTransparentBackgroundPixel(
+            PixelReader pixelReader,
+            boolean[] visited,
+            int[] queue,
+            int tail,
+            int width,
+            int height,
+            int x,
+            int y
+    ) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return tail;
+        }
+
+        int index = y * width + x;
+        if (visited[index]) {
+            return tail;
+        }
+
+        Color color = pixelReader.getColor(x, y);
+        if (!isPlayerSpriteBackgroundColor(color)) {
+            return tail;
+        }
+
+        visited[index] = true;
+        queue[tail] = index;
+        return tail + 1;
+    }
+
+    private boolean isPlayerSpriteBackgroundColor(Color color) {
+        return color.getOpacity() > 0.98d
+                && color.getRed() >= 0.92d
+                && color.getGreen() >= 0.92d
+                && color.getBlue() >= 0.92d;
     }
 
     private record BoardPalette(Color primaryTileColor, Color secondaryTileColor, Color borderColor) {
