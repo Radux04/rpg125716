@@ -126,6 +126,7 @@ public class GameViewController {
     private boolean attackRequested;
     private boolean interactionRequested;
     private boolean specialPowerRequested;
+    private boolean waterDodgesNextCounterAttack;
     private long lastFrameNanos;
     private double attackCooldownRemaining;
     private double waterSurgeRemaining;
@@ -1498,7 +1499,8 @@ public class GameViewController {
         }
 
         if (waterSurgeRemaining > 0) {
-            return "Acqua attiva per " + (int) Math.ceil(waterSurgeRemaining) + "s: ogni hit respinge il bersaglio.";
+            return "Acqua attiva per " + (int) Math.ceil(waterSurgeRemaining)
+                    + "s: ogni hit respinge il bersaglio e schivi un attacco si e uno no.";
         }
 
         if (windTornadoEnemy != null && windTornadoRemaining > 0) {
@@ -1544,7 +1546,7 @@ public class GameViewController {
         }
 
         if (waterSurgeRemaining > 0) {
-            return "Pietra: Acqua attiva " + (int) Math.ceil(waterSurgeRemaining) + "s";
+            return "Pietra: Acqua attiva " + (int) Math.ceil(waterSurgeRemaining) + "s - schiva alternata";
         }
 
         if (windTornadoEnemy != null && windTornadoRemaining > 0) {
@@ -1594,6 +1596,7 @@ public class GameViewController {
     private void activateWaterStonePower(Player player) {
         player.consumeStoneSuperPower();
         waterSurgeRemaining = WATER_SURGE_DURATION_SECONDS;
+        waterDodgesNextCounterAttack = true;
     }
 
     private void activateWindStonePower(Player player) {
@@ -1621,6 +1624,9 @@ public class GameViewController {
 
     private void updateWaterStonePower(double deltaSeconds) {
         waterSurgeRemaining = Math.max(0, waterSurgeRemaining - deltaSeconds);
+        if (waterSurgeRemaining <= 0) {
+            waterDodgesNextCounterAttack = false;
+        }
     }
 
     private void updateWindStonePower(double deltaSeconds) {
@@ -1749,7 +1755,17 @@ public class GameViewController {
     }
 
     private boolean shouldEnemyCounterAttackOnBasicAttack(Enemy enemy) {
-        return !enemy.equals(windTornadoEnemy) || windTornadoRemaining <= 0;
+        if (enemy.equals(windTornadoEnemy) && windTornadoRemaining > 0) {
+            return false;
+        }
+
+        if (waterSurgeRemaining > 0) {
+            boolean dodgeCurrentCounterAttack = waterDodgesNextCounterAttack;
+            waterDodgesNextCounterAttack = !waterDodgesNextCounterAttack;
+            return !dodgeCurrentCounterAttack;
+        }
+
+        return true;
     }
 
     private void clearWindTornado() {
