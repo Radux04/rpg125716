@@ -1,6 +1,6 @@
 # The Forgotten Gate
 
-`The Forgotten Gate` e una demo RPG desktop sviluppata in Java e JavaFX.
+`The Forgotten Gate` è una demo RPG roguelike desktop sviluppata in Java 25 e JavaFX.
 Il progetto include combattimento, progressione del player, scelta dell'elemento, reward di livello, achievement e salvataggi su file.
 
 ## 🚀 Come eseguire il progetto
@@ -8,7 +8,7 @@ Il progetto include combattimento, progressione del player, scelta dell'elemento
 Prerequisiti:
 
 - JDK 25
-- Gradle Wrapper incluso nel repository
+- Gradle Wrapper incluso nella repository
 
 Per clonare la repo:
 
