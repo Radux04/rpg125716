@@ -136,6 +136,15 @@ public class GameService {
         return resolveCurrentLevelAttack(enemy, bonusDamage, false);
     }
 
+    public CombatResult enemyAttackCurrentPlayer(Enemy enemy) {
+        ensureLevelStarted();
+        Enemy attackingEnemy = requireAttackableEnemy(enemy);
+        Player player = gameController.requireCurrentSession().getPlayer();
+
+        combatService.resetCombat();
+        return combatService.enemyAttack(attackingEnemy, player);
+    }
+
     private CombatTurnResult resolveCurrentLevelAttack(Enemy enemy, int bonusDamage, boolean enemyCanCounterAttack) {
         ensureLevelStarted();
         Enemy enemyToAttack = requireAttackableEnemy(enemy);

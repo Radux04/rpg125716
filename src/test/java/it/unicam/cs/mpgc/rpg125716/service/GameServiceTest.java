@@ -1,6 +1,7 @@
 package it.unicam.cs.mpgc.rpg125716.service;
 
 import it.unicam.cs.mpgc.rpg125716.controller.GameController;
+import it.unicam.cs.mpgc.rpg125716.event.GameEventDispatcher;
 import it.unicam.cs.mpgc.rpg125716.model.character.ElementType;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Enemy;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.DoubleSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -141,6 +143,24 @@ class GameServiceTest {
     }
 
     @Test
+    void enemyAttackCurrentPlayerUpdatesTheCurrentRunState() {
+        GameService gameService = createGameService(() -> 0.99d);
+        gameService.newGame();
+        gameService.startLevel();
+
+        CurrentGameState initialState = gameService.getCurrentGameState();
+        Enemy enemy = initialState.getCurrentLevel().getEnemies().getFirst();
+        int playerHpBeforeAttack = initialState.getPlayer().getCurrentHp();
+
+        CombatResult result = gameService.enemyAttackCurrentPlayer(enemy);
+        CurrentGameState updatedState = gameService.getCurrentGameState();
+
+        assertEquals(enemy.getName() + " attacca " + updatedState.getPlayer().getName(), result.getMessage());
+        assertTrue(result.getDamage() > 0);
+        assertEquals(playerHpBeforeAttack - result.getDamage(), updatedState.getPlayer().getCurrentHp());
+    }
+
+    @Test
     void loadGameRestoresAnExistingSaveThroughTheFacade() {
         GameService gameService = createGameService();
         Player player = new Player("Loaded Hero", 60, 10, 5, 8);
@@ -183,13 +203,21 @@ class GameServiceTest {
     }
 
     private GameService createGameService() {
+        return createGameService(Math::random);
+    }
+
+    private GameService createGameService(DoubleSupplier dodgeRollSupplier) {
         SaveService saveService = createSaveService();
         AchievementService achievementService = new AchievementService(
                 new AchievementRepository(tempDir.resolve("achievements.xml"))
         );
         LoadService loadService = new LoadService(saveService, achievementService);
         GameController gameController = new GameController(saveService, loadService, achievementService);
-        return new GameService(gameController);
+        CombatService combatService = new CombatService(
+                new GameEventDispatcher().registerListener(achievementService),
+                dodgeRollSupplier
+        );
+        return new GameService(gameController, combatService);
     }
 
     private SaveService createSaveService() {

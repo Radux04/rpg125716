@@ -52,6 +52,7 @@ import javafx.scene.transform.Scale;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -88,6 +89,7 @@ public class GameViewController {
     private static final double INTERACTION_RANGE = 110;
     private static final double MELEE_ATTACK_RANGE = 170;
     private static final double ATTACK_COOLDOWN_SECONDS = 0.45;
+    private static final double ENEMY_ATTACK_COOLDOWN_SECONDS = 1.10;
     private static final double FIREBALL_SPEED = 860;
     private static final double WATER_SURGE_DURATION_SECONDS = 10;
     private static final double WIND_TORNADO_DURATION_SECONDS = 5;
@@ -138,9 +140,10 @@ public class GameViewController {
     private boolean attackRequested;
     private boolean interactionRequested;
     private boolean specialPowerRequested;
-    private boolean waterDodgesNextCounterAttack;
+    private boolean waterDodgesNextEnemyAttack;
     private long lastFrameNanos;
     private double attackCooldownRemaining;
+    private double enemyAttackCooldownRemaining;
     private double waterSurgeRemaining;
     private Enemy windTornadoEnemy;
     private double windTornadoRemaining;
@@ -343,6 +346,7 @@ public class GameViewController {
         acknowledgedAchievements.addAll(currentGameState.getPlayer().getUnlockedAchievements());
         arenaObstacles.clear();
         arenaObstacles.addAll(buildArenaObstacles());
+        enemyAttackCooldownRemaining = 0;
         playerPosition = resolveArenaPosition(PLAYER_START_POSITION, PLAYER_COLLISION_RADIUS);
         seedEnemyPositions();
         ensureSelectedEnemy();
@@ -539,6 +543,7 @@ public class GameViewController {
             processInteractionRequest();
             processSpecialPowerRequest();
             processAttackRequest();
+            processPassiveEnemyAttacks();
         } else {
             attackRequested = false;
             interactionRequested = false;
@@ -546,6 +551,7 @@ public class GameViewController {
         }
 
         attackCooldownRemaining = Math.max(0, attackCooldownRemaining - deltaSeconds);
+        enemyAttackCooldownRemaining = Math.max(0, enemyAttackCooldownRemaining - deltaSeconds);
         heartPulseRemaining = Math.max(0, heartPulseRemaining - deltaSeconds);
         updateHud();
         renderDynamicScene();
@@ -709,8 +715,41 @@ public class GameViewController {
             return;
         }
 
-        resolveAttackOnEnemy(selectedEnemy, shouldEnemyCounterAttackOnBasicAttack(selectedEnemy), true, true);
+        resolveAttackOnEnemy(selectedEnemy, shouldEnemyAttackPlayer(selectedEnemy), true, true);
         attackCooldownRemaining = ATTACK_COOLDOWN_SECONDS;
+        enemyAttackCooldownRemaining = ENEMY_ATTACK_COOLDOWN_SECONDS;
+    }
+
+    private void processPassiveEnemyAttacks() {
+        if (enemyAttackCooldownRemaining > 0 || !currentGameState.getPlayer().isAlive()) {
+            return;
+        }
+
+        Enemy attackingEnemy = findEnemyReadyToAttackPlayer();
+        if (attackingEnemy == null) {
+            return;
+        }
+
+        enemyAttackCooldownRemaining = ENEMY_ATTACK_COOLDOWN_SECONDS;
+        if (!shouldEnemyAttackPlayer(attackingEnemy)) {
+            return;
+        }
+
+        try {
+            CombatResult enemyAttackResult = gameService.enemyAttackCurrentPlayer(attackingEnemy);
+            currentGameState = gameService.getCurrentGameState();
+            announceNewlyUnlockedAchievements();
+
+            if (enemyAttackResult.getDamage() > 0) {
+                currentGameState.getPlayer().registerStonePowerHitTaken();
+            }
+
+            synchronizeEnemyPositionsWithCurrentLevel();
+            ensureSelectedEnemy();
+            updateRewardChoiceOverlay();
+        } catch (RuntimeException exception) {
+            refreshView();
+        }
     }
 
     private void updateHud() {
@@ -1667,7 +1706,7 @@ public class GameViewController {
     private void activateWaterStonePower(Player player) {
         player.consumeStoneSuperPower();
         waterSurgeRemaining = WATER_SURGE_DURATION_SECONDS;
-        waterDodgesNextCounterAttack = true;
+        waterDodgesNextEnemyAttack = true;
     }
 
     private void activateWindStonePower(Player player) {
@@ -1696,7 +1735,7 @@ public class GameViewController {
     private void updateWaterStonePower(double deltaSeconds) {
         waterSurgeRemaining = Math.max(0, waterSurgeRemaining - deltaSeconds);
         if (waterSurgeRemaining <= 0) {
-            waterDodgesNextCounterAttack = false;
+            waterDodgesNextEnemyAttack = false;
         }
     }
 
@@ -1844,15 +1883,24 @@ public class GameViewController {
         enemyPositions.put(enemy, pushedPosition);
     }
 
-    private boolean shouldEnemyCounterAttackOnBasicAttack(Enemy enemy) {
+    private Enemy findEnemyReadyToAttackPlayer() {
+        return currentGameState.getCurrentLevel().getEnemies().stream()
+                .filter(Enemy::isAlive)
+                .filter(this::isEnemyInAttackRange)
+                .filter(enemyPositions::containsKey)
+                .min(Comparator.comparingDouble(enemy -> playerPosition.distance(enemyPositions.get(enemy))))
+                .orElse(null);
+    }
+
+    private boolean shouldEnemyAttackPlayer(Enemy enemy) {
         if (enemy.equals(windTornadoEnemy) && windTornadoRemaining > 0) {
             return false;
         }
 
         if (waterSurgeRemaining > 0) {
-            boolean dodgeCurrentCounterAttack = waterDodgesNextCounterAttack;
-            waterDodgesNextCounterAttack = !waterDodgesNextCounterAttack;
-            return !dodgeCurrentCounterAttack;
+            boolean dodgeCurrentEnemyAttack = waterDodgesNextEnemyAttack;
+            waterDodgesNextEnemyAttack = !waterDodgesNextEnemyAttack;
+            return !dodgeCurrentEnemyAttack;
         }
 
         return true;
