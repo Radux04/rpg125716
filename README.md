@@ -3,7 +3,7 @@
 `The Forgotten Gate` e una demo RPG desktop sviluppata in Java e JavaFX.
 Il progetto include combattimento, progressione del player, scelta dell'elemento, reward di livello, achievement e salvataggi su file.
 
-## Esecuzione
+## 🚀 Come eseguire il progetto
 
 Prerequisiti:
 
@@ -29,7 +29,7 @@ Per avviare il gioco:
 .\gradlew run
 ```
 
-## Uso di strumenti di AI
+## 🤖 Uso di strumenti di AI
 
 Durante la realizzazione del progetto sono stati utilizzati strumenti di AI come supporto alla progettazione, alla scrittura di codice, al refactoring e alla documentazione.
 
