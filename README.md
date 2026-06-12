@@ -552,7 +552,11 @@ Requisiti consigliati:
 - JDK 25, coerente con la configurazione del progetto
 - Gradle Wrapper incluso nel repository
 
-Il progetto forza Gradle a usare il JDK 25 configurato in `gradle.properties`.
+Il progetto usa una Java toolchain configurata nel `build.gradle.kts` e richiede quindi una JDK 25 disponibile sulla macchina.
+Eventuali configurazioni locali come `org.gradle.java.home` non devono essere versionate nel repository:
+
+- se vuoi usare un path JDK specifico, configuralo nel file locale `~/.gradle/gradle.properties`
+- in alternativa, imposta `JAVA_HOME` sulla tua installazione di JDK 25
 
 ---
 
