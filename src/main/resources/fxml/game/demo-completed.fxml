@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import java.lang.String?>
+
+<StackPane xmlns="http://javafx.com/javafx/25"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="it.unicam.cs.mpgc.rpg125716.frontend.controller.game.DemoCompletedController">
+    <styleClass>
+        <String fx:value="app-root" />
+        <String fx:value="subscreen-root" />
+    </styleClass>
+    <children>
+        <Pane mouseTransparent="true" styleClass="blurred-background" />
+        <Pane mouseTransparent="true" styleClass="subscreen-overlay" />
+        <VBox alignment="CENTER" maxWidth="760.0" spacing="20.0" styleClass="demo-completed-panel">
+            <padding>
+                <Insets bottom="40.0" left="32.0" right="32.0" top="40.0" />
+            </padding>
+            <children>
+                <Label styleClass="demo-completed-title centered-copy" text="Demo completata!" wrapText="true" />
+                <Label styleClass="demo-completed-body centered-copy"
+                       text="Hai attraversato il Forgotten Gate&#10;e sconfitto il suo guardiano."
+                       wrapText="true" />
+                <Label styleClass="level-transition-title" text="To be continued..." wrapText="true" />
+                <HBox alignment="CENTER" spacing="16.0">
+                    <children>
+                        <Button mnemonicParsing="false"
+                                onAction="#handleBackToMenu"
+                                text="Torna al menu">
+                            <styleClass>
+                                <String fx:value="menu-button" />
+                                <String fx:value="primary-button" />
+                            </styleClass>
+                        </Button>
+                        <Button mnemonicParsing="false"
+                                onAction="#handleExit"
+                                text="Esci">
+                            <styleClass>
+                                <String fx:value="menu-button" />
+                                <String fx:value="secondary-button" />
+                            </styleClass>
+                        </Button>
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </children>
+</StackPane>
