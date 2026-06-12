@@ -46,6 +46,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,8 +97,8 @@ public class GameViewController {
     private final EventHandler<KeyEvent> globalKeyPressedHandler = this::handleGlobalKeyPressed;
     private final EventHandler<KeyEvent> globalKeyReleasedHandler = this::handleGlobalKeyReleased;
     private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
-    private final Map<Enemy, Point2D> enemyPositions = new LinkedHashMap<>();
-    private final Map<Enemy, EnemyVisual> enemyVisuals = new LinkedHashMap<>();
+    private final Map<Enemy, Point2D> enemyPositions = new IdentityHashMap<>();
+    private final Map<Enemy, EnemyVisual> enemyVisuals = new IdentityHashMap<>();
     private final Map<Class<? extends Enemy>, Image> enemySpriteCache = new HashMap<>();
     private final List<ArenaObstacle> arenaObstacles = new ArrayList<>();
 
