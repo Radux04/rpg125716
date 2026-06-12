@@ -9,6 +9,7 @@ import it.unicam.cs.mpgc.rpg125716.model.enemy.Goblin;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Skeleton;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Slime;
 import it.unicam.cs.mpgc.rpg125716.model.item.Armor;
+import it.unicam.cs.mpgc.rpg125716.model.item.BossSword;
 import it.unicam.cs.mpgc.rpg125716.model.item.Item;
 import it.unicam.cs.mpgc.rpg125716.model.item.ItemType;
 import it.unicam.cs.mpgc.rpg125716.model.item.OriginStone;
@@ -284,7 +285,16 @@ public class GameViewController {
         }
 
         try {
-            gameService.claimCurrentLevelCompletionDrop();
+            CurrentGameState claimedState = gameService.claimCurrentLevelCompletionDrop();
+            currentGameState = claimedState;
+
+            if (currentLevel.isEndsDemoWithVictory() && currentLevel.getCompletionDrop() instanceof BossSword) {
+                gameService.completeCurrentLevel();
+                stopGameLoop();
+                sceneNavigator.showDemoCompleted();
+                return;
+            }
+
             refreshView();
         } catch (RuntimeException exception) {
             refreshView();
@@ -1510,6 +1520,11 @@ public class GameViewController {
         }
 
         if (hasPendingCompletionDrop()) {
+            if (currentGameState.getCurrentLevel().isEndsDemoWithVictory()) {
+                return isPlayerNearInteractiveItem()
+                        ? "Raccogli la spada del guardiano per concludere la demo."
+                        : "Raggiungi la spada del guardiano per concludere la demo.";
+            }
             return isPlayerNearInteractiveItem()
                     ? "Raccogli l'oggetto del livello."
                     : "Raggiungi l'oggetto del livello per raccoglierlo.";
@@ -1568,7 +1583,9 @@ public class GameViewController {
         }
 
         if (hasPendingCompletionDrop() && !isPlayerNearInteractiveItem()) {
-            return "Raggiungi l'oggetto e premi E per raccoglierlo.";
+            return currentGameState.getCurrentLevel().isEndsDemoWithVictory()
+                    ? "Raggiungi la spada e premi E per concludere la demo."
+                    : "Raggiungi l'oggetto e premi E per raccoglierlo.";
         }
 
         if (canOpenDoor() && !isPlayerNearDoor()) {

@@ -1,5 +1,6 @@
 package it.unicam.cs.mpgc.rpg125716.frontend.scene;
 
+import it.unicam.cs.mpgc.rpg125716.frontend.controller.game.DemoCompletedController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.game.GameOverviewController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.game.GameViewController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.LoadSlotsController;
@@ -29,6 +30,7 @@ public class SceneNavigator {
     private static final String LOAD_SLOTS_FXML = "/fxml/menu/load-slots.fxml";
     private static final String GAME_OVERVIEW_FXML = "/fxml/game/game-overview.fxml";
     private static final String GAME_VIEW_FXML = "/fxml/game/game-view.fxml";
+    private static final String DEMO_COMPLETED_FXML = "/fxml/game/demo-completed.fxml";
 
     private final Stage stage;
     private final GameService gameService;
@@ -75,6 +77,10 @@ public class SceneNavigator {
 
     public void showGameView(CurrentGameState currentGameState, String feedbackMessage) {
         show(GAME_VIEW_FXML, currentGameState, feedbackMessage);
+    }
+
+    public void showDemoCompleted() {
+        show(DEMO_COMPLETED_FXML, null, null);
     }
 
     private void show(String fxmlPath, CurrentGameState currentGameState, String feedbackMessage) {
@@ -126,6 +132,10 @@ public class SceneNavigator {
                     Objects.requireNonNull(currentGameState, "currentGameState cannot be null"),
                     feedbackMessage
             );
+        }
+
+        if (controllerType == DemoCompletedController.class) {
+            return new DemoCompletedController(this);
         }
 
         throw new IllegalArgumentException("Unsupported controller type: " + controllerType.getName());
