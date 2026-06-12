@@ -5,11 +5,14 @@ import it.unicam.cs.mpgc.rpg125716.frontend.controller.game.GameOverviewControll
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.game.GameViewController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.LoadSlotsController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.MainMenuController;
+import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 import it.unicam.cs.mpgc.rpg125716.service.CurrentGameState;
 import it.unicam.cs.mpgc.rpg125716.service.GameService;
 import javafx.animation.FadeTransition;
+import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.SequentialTransition;
+import javafx.animation.TranslateTransition;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -18,6 +21,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -25,6 +29,8 @@ import javafx.util.Duration;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.Objects;
 
 public class SceneNavigator {
@@ -39,6 +45,8 @@ public class SceneNavigator {
     private final double sceneWidth;
     private final double sceneHeight;
     private final String stylesheet;
+    private final Deque<String> pendingAchievementPopupTitles = new ArrayDeque<>();
+    private boolean achievementPopupVisible;
 
     public SceneNavigator(Stage stage, GameService gameService, double sceneWidth, double sceneHeight) {
         this.stage = Objects.requireNonNull(stage, "stage cannot be null");
@@ -84,6 +92,20 @@ public class SceneNavigator {
     public void showDemoCompleted() {
         Parent root = loadRoot(DEMO_COMPLETED_FXML, null, null);
         showWithDemoCompletionTransition(root);
+    }
+
+    public void showAchievementUnlocked(AchievementType achievementType) {
+        showAchievementUnlocked(Objects.requireNonNull(achievementType, "achievementType cannot be null").getTitle());
+    }
+
+    public void showAchievementUnlocked(String achievementTitle) {
+        String safeAchievementTitle = Objects.requireNonNull(achievementTitle, "achievementTitle cannot be null").trim();
+        if (safeAchievementTitle.isEmpty()) {
+            return;
+        }
+
+        pendingAchievementPopupTitles.addLast(safeAchievementTitle);
+        playNextAchievementPopup(Duration.ZERO);
     }
 
     private void show(String fxmlPath, CurrentGameState currentGameState, String feedbackMessage) {
@@ -148,6 +170,7 @@ public class SceneNavigator {
         Scene scene = new Scene(root, sceneWidth, sceneHeight);
         scene.getStylesheets().add(stylesheet);
         stage.setScene(scene);
+        playNextAchievementPopup(Duration.ZERO);
     }
 
     private void showWithLevelTransition(Parent root, String levelTitle, String progressionSummary) {
@@ -165,6 +188,7 @@ public class SceneNavigator {
         stage.setScene(scene);
 
         playLevelTransition(scene, transitionOverlay);
+        playNextAchievementPopup(Duration.ZERO);
     }
 
     private void showWithDemoCompletionTransition(Parent root) {
@@ -182,6 +206,7 @@ public class SceneNavigator {
         stage.setScene(scene);
 
         playAutomaticTransition(transitionOverlay);
+        playNextAchievementPopup(Duration.millis(1800));
     }
 
     private StackPane buildTransitionOverlay(
@@ -277,6 +302,102 @@ public class SceneNavigator {
         });
 
         new SequentialTransition(contentFadeIn, hold, overlayFadeOut).play();
+    }
+
+    private void playNextAchievementPopup(Duration initialDelay) {
+        if (achievementPopupVisible || pendingAchievementPopupTitles.isEmpty()) {
+            return;
+        }
+
+        Scene scene = stage.getScene();
+        if (scene == null || !(scene.getRoot() instanceof StackPane)) {
+            return;
+        }
+
+        achievementPopupVisible = true;
+        Runnable popupRunner = this::displayQueuedAchievementPopup;
+
+        if (initialDelay != null && initialDelay.greaterThan(Duration.ZERO)) {
+            PauseTransition delay = new PauseTransition(initialDelay);
+            delay.setOnFinished(event -> popupRunner.run());
+            delay.play();
+            return;
+        }
+
+        popupRunner.run();
+    }
+
+    private void displayQueuedAchievementPopup() {
+        Scene scene = stage.getScene();
+        if (scene == null || !(scene.getRoot() instanceof StackPane rootPane)) {
+            achievementPopupVisible = false;
+            return;
+        }
+
+        String achievementTitle = pendingAchievementPopupTitles.pollFirst();
+        if (achievementTitle == null) {
+            achievementPopupVisible = false;
+            return;
+        }
+
+        StackPane popupLayer = buildAchievementPopup(achievementTitle);
+        rootPane.getChildren().add(popupLayer);
+
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(220), popupLayer);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+
+        TranslateTransition slideIn = new TranslateTransition(Duration.millis(220), popupLayer);
+        slideIn.setFromY(-18);
+        slideIn.setToY(0);
+
+        PauseTransition hold = new PauseTransition(Duration.millis(1900));
+
+        FadeTransition fadeOut = new FadeTransition(Duration.millis(260), popupLayer);
+        fadeOut.setFromValue(1);
+        fadeOut.setToValue(0);
+
+        TranslateTransition slideOut = new TranslateTransition(Duration.millis(260), popupLayer);
+        slideOut.setFromY(0);
+        slideOut.setToY(-10);
+
+        SequentialTransition popupSequence = new SequentialTransition(
+                new ParallelTransition(fadeIn, slideIn),
+                hold,
+                new ParallelTransition(fadeOut, slideOut)
+        );
+        popupSequence.setOnFinished(event -> {
+            if (popupLayer.getParent() instanceof StackPane parent) {
+                parent.getChildren().remove(popupLayer);
+            }
+            achievementPopupVisible = false;
+            playNextAchievementPopup(Duration.ZERO);
+        });
+        popupSequence.play();
+    }
+
+    private StackPane buildAchievementPopup(String achievementTitle) {
+        Label eyebrowLabel = new Label("Achievement sbloccato!");
+        eyebrowLabel.getStyleClass().add("achievement-popup-eyebrow");
+
+        Label titleLabel = new Label(achievementTitle);
+        titleLabel.getStyleClass().add("achievement-popup-title");
+        titleLabel.setWrapText(true);
+        titleLabel.setMaxWidth(280);
+
+        VBox popupCard = new VBox(4, eyebrowLabel, titleLabel);
+        popupCard.getStyleClass().add("achievement-popup");
+        popupCard.setPrefWidth(228);
+        popupCard.setMaxWidth(228);
+
+        StackPane popupLayer = new StackPane(popupCard);
+        popupLayer.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        popupLayer.setMouseTransparent(true);
+        popupLayer.setPickOnBounds(false);
+        popupLayer.setOpacity(0);
+        StackPane.setAlignment(popupLayer, Pos.TOP_CENTER);
+        StackPane.setMargin(popupLayer, new Insets(16, 0, 0, 0));
+        return popupLayer;
     }
 
     private String resolveStylesheet() {

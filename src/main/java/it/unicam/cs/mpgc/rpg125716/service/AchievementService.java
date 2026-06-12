@@ -5,9 +5,9 @@ import it.unicam.cs.mpgc.rpg125716.event.GameEvent;
 import it.unicam.cs.mpgc.rpg125716.event.GameEventListener;
 import it.unicam.cs.mpgc.rpg125716.event.ItemCollectedEvent;
 import it.unicam.cs.mpgc.rpg125716.event.LevelCompletedEvent;
-import it.unicam.cs.mpgc.rpg125716.event.OriginStoneAttunedEvent;
 import it.unicam.cs.mpgc.rpg125716.event.PlayerDiedEvent;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
+import it.unicam.cs.mpgc.rpg125716.model.item.OriginStone;
 import it.unicam.cs.mpgc.rpg125716.model.progression.Achievement;
 import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 import it.unicam.cs.mpgc.rpg125716.persistence.AchievementRepository;
@@ -88,12 +88,7 @@ public class AchievementService implements GameEventListener {
         switch (gameEvent) {
             case EnemyDefeatedEvent enemyDefeatedEvent -> handleEnemyDefeated(enemyDefeatedEvent);
             case ItemCollectedEvent itemCollectedEvent -> handleItemCollected(itemCollectedEvent);
-            case OriginStoneAttunedEvent originStoneAttunedEvent -> unlockAchievement(
-                    originStoneAttunedEvent.player(),
-                    AchievementType.ORIGIN_STONE
-            );
-            case LevelCompletedEvent ignored -> {
-            }
+            case LevelCompletedEvent levelCompletedEvent -> handleLevelCompleted(levelCompletedEvent);
             case PlayerDiedEvent ignored -> {
             }
             default -> {
@@ -154,8 +149,18 @@ public class AchievementService implements GameEventListener {
     }
 
     private void handleItemCollected(ItemCollectedEvent itemCollectedEvent) {
+        if (itemCollectedEvent.item() instanceof OriginStone) {
+            unlockAchievement(itemCollectedEvent.player(), AchievementType.ORIGIN_STONE);
+        }
+
         if (itemCollectedEvent.totalCollectedItems() >= COLLECTOR_TARGET) {
             unlockAchievement(itemCollectedEvent.player(), AchievementType.COLLECTOR);
+        }
+    }
+
+    private void handleLevelCompleted(LevelCompletedEvent levelCompletedEvent) {
+        if (levelCompletedEvent.demoCompleted()) {
+            unlockAchievement(levelCompletedEvent.player(), AchievementType.DEMO_COMPLETED);
         }
     }
 }

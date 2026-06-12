@@ -8,6 +8,7 @@ import it.unicam.cs.mpgc.rpg125716.model.item.OriginStone;
 import it.unicam.cs.mpgc.rpg125716.model.item.Potion;
 import it.unicam.cs.mpgc.rpg125716.model.level.DemoCampaign;
 import it.unicam.cs.mpgc.rpg125716.model.level.LevelRewardChoice;
+import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 import it.unicam.cs.mpgc.rpg125716.persistence.AchievementRepository;
 import it.unicam.cs.mpgc.rpg125716.persistence.GameStateLog;
 import it.unicam.cs.mpgc.rpg125716.persistence.SaveSlot;
@@ -154,6 +155,31 @@ class GameServiceTest {
 
         assertEquals("Loaded Hero", loadedState.getPlayer().getName());
         assertEquals(SaveSlot.SLOT_2, loadedState.getSaveSlot());
+    }
+
+    @Test
+    void completingTheDemoUnlocksTheDemoCompletedAchievement() {
+        GameService gameService = createGameService();
+        gameService.newGame();
+
+        gameService.startLevel();
+        gameService.getCurrentGameState().getCurrentLevel().getEnemies().forEach(enemy -> enemy.setHp(0));
+        gameService.claimCurrentLevelCompletionDrop();
+        gameService.attuneCurrentPlayerToOriginStone(ElementType.FIRE);
+        gameService.completeCurrentLevel();
+
+        gameService.startLevel();
+        gameService.getCurrentGameState().getCurrentLevel().getEnemies().forEach(enemy -> enemy.setHp(0));
+        gameService.chooseCurrentLevelReward(LevelRewardChoice.HEALING_POTION);
+        gameService.completeCurrentLevel();
+
+        gameService.startLevel();
+        gameService.getCurrentGameState().getCurrentLevel().getEnemies().forEach(enemy -> enemy.setHp(0));
+        gameService.claimCurrentLevelCompletionDrop();
+        CurrentGameState completedState = gameService.completeCurrentLevel();
+
+        assertTrue(completedState.isDemoCompleted());
+        assertTrue(completedState.getPlayer().hasAchievement(AchievementType.DEMO_COMPLETED));
     }
 
     private GameService createGameService() {
