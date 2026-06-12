@@ -10,6 +10,13 @@ Prerequisiti:
 - JDK 25
 - Gradle Wrapper incluso nel repository
 
+Per clonare la repo:
+
+```powershell
+git clone https://github.com/Radux04/rpg125716.git
+cd rpg125716
+```
+
 Per compilare il progetto:
 
 ```powershell
