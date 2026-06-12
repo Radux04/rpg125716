@@ -1,5 +1,6 @@
 package it.unicam.cs.mpgc.rpg125716.service;
 
+import it.unicam.cs.mpgc.rpg125716.event.GameEventDispatcher;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.BossEnemy;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Slime;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CombatServiceTest {
@@ -49,5 +51,33 @@ class CombatServiceTest {
 
         assertTrue(player.hasAchievement(AchievementType.BOSS_SLAYER));
         assertTrue(achievementService.isUnlocked(AchievementType.BOSS_SLAYER));
+    }
+
+    @Test
+    void playerCanDodgeIncomingEnemyAttack() {
+        Player player = new Player("Hero", 60, 10, 5, 8);
+        Slime slime = new Slime();
+        CombatService combatService = new CombatService(new GameEventDispatcher(), () -> 0.05d);
+
+        CombatResult result = combatService.enemyAttack(slime, player);
+
+        assertEquals(60, player.getCurrentHp());
+        assertEquals(0, result.getDamage());
+        assertFalse(result.isCombatFinished());
+        assertEquals("Hero schiva l'attacco di Slime", result.getMessage());
+    }
+
+    @Test
+    void playerTakesDamageWhenDodgeRollFails() {
+        Player player = new Player("Hero", 60, 10, 5, 8);
+        Slime slime = new Slime();
+        CombatService combatService = new CombatService(new GameEventDispatcher(), () -> 0.99d);
+
+        CombatResult result = combatService.enemyAttack(slime, player);
+
+        assertEquals(59, player.getCurrentHp());
+        assertEquals(1, result.getDamage());
+        assertFalse(result.isCombatFinished());
+        assertEquals("Slime attacca Hero", result.getMessage());
     }
 }

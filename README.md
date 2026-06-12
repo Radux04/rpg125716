@@ -276,6 +276,8 @@ Classi principali:
 
 `CombatService` gestisce gli attacchi tra player e nemico e l'uso degli oggetti in combattimento.
 Non conosce JavaFX e non aggiorna direttamente la grafica: restituisce sempre oggetti risultato.
+Gli attacchi nemici possono essere schivati in base alla `speed` del player, con una probabilita che cresce fino a un massimo del `35%`.
+In questo modo `WIND` rende davvero operativo il potere `Passo del Vento`, dato che il bonus a `speed` aumenta anche la probabilita di evitare il colpo in arrivo.
 Quando succede qualcosa di rilevante nel combattimento, `CombatService` emette eventi di gioco:
 
 - `EnemyDefeatedEvent` quando il player sconfigge un nemico

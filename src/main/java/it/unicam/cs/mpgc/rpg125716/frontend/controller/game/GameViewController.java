@@ -605,6 +605,7 @@ public class GameViewController {
                 "ATK " + currentGameState.getPlayer().getAttack()
                         + "  DEF " + currentGameState.getPlayer().getDefense()
                         + "  SPD " + currentGameState.getPlayer().getSpeed()
+                        + "  SCHIVA " + currentGameState.getPlayer().getDodgeChancePercentage() + "%"
         );
         contextualHintLabel.setText(buildContextualHintText());
         playerElementHudLabel.setText(

@@ -8,22 +8,32 @@ import it.unicam.cs.mpgc.rpg125716.model.enemy.Enemy;
 import it.unicam.cs.mpgc.rpg125716.model.item.Item;
 
 import java.util.Objects;
+import java.util.function.DoubleSupplier;
 
 public class CombatService {
     private final GameEventDispatcher gameEventDispatcher;
+    private final DoubleSupplier dodgeRollSupplier;
     private boolean combatFinished;
     private CombatWinner winner = CombatWinner.NONE;
 
     public CombatService() {
-        this(createDefaultDispatcher());
+        this(createDefaultDispatcher(), Math::random);
     }
 
     public CombatService(AchievementService achievementService) {
-        this(new GameEventDispatcher().registerListener(Objects.requireNonNull(achievementService, "achievementService cannot be null")));
+        this(
+                new GameEventDispatcher().registerListener(Objects.requireNonNull(achievementService, "achievementService cannot be null")),
+                Math::random
+        );
     }
 
     public CombatService(GameEventDispatcher gameEventDispatcher) {
+        this(gameEventDispatcher, Math::random);
+    }
+
+    CombatService(GameEventDispatcher gameEventDispatcher, DoubleSupplier dodgeRollSupplier) {
         this.gameEventDispatcher = Objects.requireNonNull(gameEventDispatcher, "gameEventDispatcher cannot be null");
+        this.dodgeRollSupplier = Objects.requireNonNull(dodgeRollSupplier, "dodgeRollSupplier cannot be null");
     }
 
     public CombatResult playerAttack(Player player, Enemy enemy) {
@@ -61,6 +71,15 @@ public class CombatService {
     }
 
     public CombatResult attack(Enemy enemy, Player player) {
+        if (playerDodgesAttack(player)) {
+            return new CombatResult(
+                    player.getName() + " schiva l'attacco di " + enemy.getName(),
+                    0,
+                    combatFinished,
+                    winner
+            );
+        }
+
         int previousHp = player.getCurrentHp();
         player.takeDamage(enemy.getAttack());
         player.setCurrentHp(Math.max(0, player.getCurrentHp()));
@@ -121,6 +140,10 @@ public class CombatService {
 
     private int calculateDamage(int attack, int defense) {
         return Math.max(1, attack - defense);
+    }
+
+    private boolean playerDodgesAttack(Player player) {
+        return dodgeRollSupplier.getAsDouble() < player.getDodgeChance();
     }
 
     private void finishCombat(CombatWinner winner) {
