@@ -299,6 +299,16 @@
     -fx-alignment: center;
 }
 
+.level-transition-continue {
+    -fx-font-family: "Space Grotesk", "Segoe UI Semibold", sans-serif;
+    -fx-text-fill: rgba(241, 237, 248, 0.80);
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+    -fx-letter-spacing: 0.6px;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+}
+
 .inventory-entry-card {
     -fx-padding: 14 16 14 16;
     -fx-alignment: center-left;

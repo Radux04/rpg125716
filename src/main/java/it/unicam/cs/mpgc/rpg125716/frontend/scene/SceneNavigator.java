@@ -7,14 +7,14 @@ import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.MainMenuController;
 import it.unicam.cs.mpgc.rpg125716.service.CurrentGameState;
 import it.unicam.cs.mpgc.rpg125716.service.GameService;
 import javafx.animation.FadeTransition;
-import javafx.animation.PauseTransition;
-import javafx.animation.ParallelTransition;
-import javafx.animation.SequentialTransition;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -146,7 +146,7 @@ public class SceneNavigator {
         scene.getStylesheets().add(stylesheet);
         stage.setScene(scene);
 
-        playLevelTransition(transitionOverlay);
+        playLevelTransition(scene, transitionOverlay);
     }
 
     private StackPane buildLevelTransitionOverlay(String levelTitle, String progressionSummary) {
@@ -160,7 +160,6 @@ public class SceneNavigator {
 
         VBox content = new VBox(14, eyebrowLabel, titleLabel);
         content.setAlignment(Pos.CENTER);
-        content.setOpacity(0);
 
         if (progressionSummary != null && !progressionSummary.isBlank()) {
             Label summaryLabel = new Label(progressionSummary);
@@ -170,44 +169,50 @@ public class SceneNavigator {
             content.getChildren().add(summaryLabel);
         }
 
-        StackPane overlay = new StackPane(content);
+        Label continueLabel = new Label("Premi qualsiasi tasto per continuare...");
+        continueLabel.getStyleClass().add("level-transition-continue");
+
+        BorderPane overlayLayout = new BorderPane();
+        overlayLayout.setCenter(content);
+        overlayLayout.setBottom(continueLabel);
+        BorderPane.setAlignment(content, Pos.CENTER);
+        BorderPane.setAlignment(continueLabel, Pos.BOTTOM_CENTER);
+        BorderPane.setMargin(continueLabel, new Insets(0, 0, 40, 0));
+        overlayLayout.setOpacity(0);
+
+        StackPane overlay = new StackPane(overlayLayout);
         overlay.getStyleClass().add("level-transition-overlay");
         overlay.setOpacity(1);
         overlay.setPickOnBounds(true);
-        overlay.setUserData(content);
+        overlay.setUserData(overlayLayout);
         return overlay;
     }
 
-    private void playLevelTransition(StackPane transitionOverlay) {
-        VBox content = (VBox) transitionOverlay.getUserData();
+    private void playLevelTransition(Scene scene, StackPane transitionOverlay) {
+        BorderPane overlayLayout = (BorderPane) transitionOverlay.getUserData();
 
-        FadeTransition contentFadeIn = new FadeTransition(Duration.millis(220), content);
+        FadeTransition contentFadeIn = new FadeTransition(Duration.millis(220), overlayLayout);
         contentFadeIn.setFromValue(0);
         contentFadeIn.setToValue(1);
+        contentFadeIn.play();
 
-        PauseTransition holdBlackScreen = new PauseTransition(Duration.millis(280));
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, new javafx.event.EventHandler<>() {
+            @Override
+            public void handle(KeyEvent event) {
+                event.consume();
+                scene.removeEventFilter(KeyEvent.KEY_PRESSED, this);
 
-        FadeTransition contentFadeOut = new FadeTransition(Duration.millis(220), content);
-        contentFadeOut.setFromValue(1);
-        contentFadeOut.setToValue(0);
-
-        FadeTransition overlayFadeOut = new FadeTransition(Duration.millis(420), transitionOverlay);
-        overlayFadeOut.setFromValue(1);
-        overlayFadeOut.setToValue(0);
-
-        ParallelTransition fadeOut = new ParallelTransition(contentFadeOut, overlayFadeOut);
-
-        SequentialTransition transition = new SequentialTransition(
-                contentFadeIn,
-                holdBlackScreen,
-                fadeOut
-        );
-        transition.setOnFinished(event -> {
-            if (transitionOverlay.getParent() instanceof StackPane parent) {
-                parent.getChildren().remove(transitionOverlay);
+                FadeTransition overlayFadeOut = new FadeTransition(Duration.millis(260), transitionOverlay);
+                overlayFadeOut.setFromValue(1);
+                overlayFadeOut.setToValue(0);
+                overlayFadeOut.setOnFinished(fadeEvent -> {
+                    if (transitionOverlay.getParent() instanceof StackPane parent) {
+                        parent.getChildren().remove(transitionOverlay);
+                    }
+                });
+                overlayFadeOut.play();
             }
         });
-        transition.play();
     }
 
     private String resolveStylesheet() {
