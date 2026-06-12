@@ -43,8 +43,10 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,9 +97,10 @@ public class GameViewController {
     private final EventHandler<KeyEvent> globalKeyPressedHandler = this::handleGlobalKeyPressed;
     private final EventHandler<KeyEvent> globalKeyReleasedHandler = this::handleGlobalKeyReleased;
     private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
-    private final Map<Enemy, Point2D> enemyPositions = new LinkedHashMap<>();
-    private final Map<Enemy, EnemyVisual> enemyVisuals = new LinkedHashMap<>();
+    private final Map<Enemy, Point2D> enemyPositions = new IdentityHashMap<>();
+    private final Map<Enemy, EnemyVisual> enemyVisuals = new IdentityHashMap<>();
     private final Map<Class<? extends Enemy>, Image> enemySpriteCache = new HashMap<>();
+    private final List<ArenaObstacle> arenaObstacles = new ArrayList<>();
 
     private Enemy selectedEnemy;
     private boolean inventoryOverlayOpen;
@@ -245,7 +248,9 @@ public class GameViewController {
     }
 
     private void initializeRuntimeState() {
-        playerPosition = clampToBoard(PLAYER_START_POSITION, PLAYER_COLLISION_RADIUS);
+        arenaObstacles.clear();
+        arenaObstacles.addAll(buildArenaObstacles());
+        playerPosition = resolveArenaPosition(PLAYER_START_POSITION, PLAYER_COLLISION_RADIUS);
         seedEnemyPositions();
         ensureSelectedEnemy();
     }
@@ -253,6 +258,7 @@ public class GameViewController {
     private void initializeBoardScene() {
         gameBoardPane.getChildren().clear();
         renderBoardTiles();
+        renderArenaStructures();
         doorNode = buildDoorNode();
         itemNode = buildItemNode();
         playerNode = buildPlayerNode();
@@ -417,10 +423,6 @@ public class GameViewController {
         attackCooldownRemaining = Math.max(0, attackCooldownRemaining - deltaSeconds);
         updateHud();
         renderDynamicScene();
-
-        if (inventoryOverlayOpen) {
-            renderInventoryOverlay();
-        }
     }
 
     private void updatePlayerMovement(double deltaSeconds) {
@@ -430,10 +432,12 @@ public class GameViewController {
         }
 
         double movementSpeed = PLAYER_MOVE_SPEED + currentGameState.getPlayer().getSpeed() * PLAYER_SPEED_FACTOR;
-        Point2D nextPosition = playerPosition.add(
-                movementDirection.normalize().multiply(movementSpeed * deltaSeconds)
+        Point2D movementDelta = movementDirection.normalize().multiply(movementSpeed * deltaSeconds);
+        playerPosition = moveInsideArena(
+                playerPosition,
+                movementDelta,
+                PLAYER_COLLISION_RADIUS
         );
-        playerPosition = clampToBoard(nextPosition, PLAYER_COLLISION_RADIUS);
     }
 
     private void updateEnemyMovement(double deltaSeconds) {
@@ -462,8 +466,11 @@ public class GameViewController {
                     + enemy.getDetectionRange() * ENEMY_MOVE_SPEED_FACTOR
                     + enemy.getAttack();
 
-            Point2D nextPosition = enemyPosition.add(direction.normalize().multiply(enemySpeed * deltaSeconds));
-            enemyPositions.put(enemy, clampToBoard(nextPosition, enemyCollisionRadius(enemy)));
+            Point2D movementDelta = direction.normalize().multiply(enemySpeed * deltaSeconds);
+            enemyPositions.put(
+                    enemy,
+                    moveInsideArena(enemyPosition, movementDelta, enemyCollisionRadius(enemy))
+            );
         }
     }
 
@@ -504,11 +511,11 @@ public class GameViewController {
                 double correction = (minimumDistance - distance) / 2d;
                 enemyPositions.put(
                         firstEnemy,
-                        clampToBoard(firstPosition.subtract(normal.multiply(correction)), enemyCollisionRadius(firstEnemy))
+                        resolveArenaPosition(firstPosition.subtract(normal.multiply(correction)), enemyCollisionRadius(firstEnemy))
                 );
                 enemyPositions.put(
                         secondEnemy,
-                        clampToBoard(secondPosition.add(normal.multiply(correction)), enemyCollisionRadius(secondEnemy))
+                        resolveArenaPosition(secondPosition.add(normal.multiply(correction)), enemyCollisionRadius(secondEnemy))
                 );
                 firstPosition = enemyPositions.get(firstEnemy);
             }
@@ -534,7 +541,7 @@ public class GameViewController {
             }
 
             Point2D normal = distance == 0 ? new Point2D(-1, 0) : delta.normalize();
-            playerPosition = clampToBoard(
+            playerPosition = resolveArenaPosition(
                     enemyPosition.add(normal.multiply(minimumDistance)),
                     PLAYER_COLLISION_RADIUS
             );
@@ -673,9 +680,237 @@ public class GameViewController {
 
     private boolean isForestTreeTile(int row, int column, int rows, int columns) {
         boolean leftGrove = column <= 1 && (row <= 1 || row >= rows - 2);
-        boolean rightGrove = column >= columns - 2 && (row == 1 || row == rows - 2);
-        boolean bottomPatch = row == rows - 1 && column >= 5 && column <= 7;
-        return leftGrove || rightGrove || bottomPatch;
+        boolean upperCluster = row == 0 && column >= 4 && column <= 5;
+        boolean bottomPatch = row == rows - 1 && column >= 3 && column <= 5;
+        return leftGrove || upperCluster || bottomPatch;
+    }
+
+    private void renderArenaStructures() {
+        for (ArenaObstacle obstacle : arenaObstacles) {
+            gameBoardPane.getChildren().add(buildArenaObstacleNode(obstacle));
+        }
+    }
+
+    private Pane buildArenaObstacleNode(ArenaObstacle obstacle) {
+        Pane obstacleNode = new Pane();
+        obstacleNode.setMouseTransparent(true);
+        obstacleNode.setManaged(false);
+        obstacleNode.setLayoutX(obstacle.x());
+        obstacleNode.setLayoutY(obstacle.y());
+        obstacleNode.setPrefSize(obstacle.width(), obstacle.height());
+
+        switch (obstacle.style()) {
+            case TREE -> populateTreeObstacleNode(obstacleNode, obstacle);
+            case FORTRESS_WALL -> populateFortressWallNode(obstacleNode, obstacle);
+            case STONE_WALL -> populateStoneWallNode(obstacleNode, obstacle);
+            case CLOSED_DOOR -> populateClosedDoorNode(obstacleNode, obstacle);
+            case RUBBLE -> populateRubbleNode(obstacleNode, obstacle);
+            case PILLAR -> populatePillarNode(obstacleNode, obstacle);
+        }
+
+        return obstacleNode;
+    }
+
+    private void populateTreeObstacleNode(Pane obstacleNode, ArenaObstacle obstacle) {
+        Rectangle trunk = new Rectangle(obstacle.width() * 0.22, obstacle.height() * 0.34, Color.web("#5a4330"));
+        trunk.setArcWidth(10);
+        trunk.setArcHeight(10);
+        trunk.setLayoutX((obstacle.width() - trunk.getWidth()) / 2);
+        trunk.setLayoutY(obstacle.height() * 0.54);
+
+        Circle canopyLeft = new Circle(obstacle.width() * 0.24, Color.web("#2f6a39"));
+        canopyLeft.setCenterX(obstacle.width() * 0.34);
+        canopyLeft.setCenterY(obstacle.height() * 0.42);
+        Circle canopyRight = new Circle(obstacle.width() * 0.22, Color.web("#3c7c47"));
+        canopyRight.setCenterX(obstacle.width() * 0.64);
+        canopyRight.setCenterY(obstacle.height() * 0.40);
+        Circle canopyTop = new Circle(obstacle.width() * 0.26, Color.web("#498a4f"));
+        canopyTop.setCenterX(obstacle.width() * 0.50);
+        canopyTop.setCenterY(obstacle.height() * 0.26);
+
+        obstacleNode.getChildren().addAll(trunk, canopyLeft, canopyRight, canopyTop);
+    }
+
+    private void populateFortressWallNode(Pane obstacleNode, ArenaObstacle obstacle) {
+        Rectangle wallBody = buildArenaRectangle(
+                obstacle.width(),
+                obstacle.height(),
+                Color.web("#3f4654"),
+                Color.web("#6d7384"),
+                18
+        );
+        Rectangle wallInset = buildArenaRectangle(
+                Math.max(0, obstacle.width() - 18),
+                Math.max(0, obstacle.height() - 18),
+                Color.web("#2f3440"),
+                Color.TRANSPARENT,
+                14
+        );
+        wallInset.setLayoutX(9);
+        wallInset.setLayoutY(9);
+        obstacleNode.getChildren().addAll(wallBody, wallInset);
+    }
+
+    private void populateStoneWallNode(Pane obstacleNode, ArenaObstacle obstacle) {
+        Rectangle wallBody = buildArenaRectangle(
+                obstacle.width(),
+                obstacle.height(),
+                Color.web("#4e5668"),
+                Color.web("#7b8397"),
+                18
+        );
+        Rectangle wallInset = buildArenaRectangle(
+                Math.max(0, obstacle.width() - 16),
+                Math.max(0, obstacle.height() - 16),
+                Color.web("#3f4756"),
+                Color.TRANSPARENT,
+                14
+        );
+        wallInset.setLayoutX(8);
+        wallInset.setLayoutY(8);
+        obstacleNode.getChildren().addAll(wallBody, wallInset);
+    }
+
+    private void populateClosedDoorNode(Pane obstacleNode, ArenaObstacle obstacle) {
+        Rectangle frame = buildArenaRectangle(
+                obstacle.width(),
+                obstacle.height(),
+                Color.web("#241b16"),
+                Color.web("#9b7d56"),
+                18
+        );
+        Rectangle doorLeaf = buildArenaRectangle(
+                Math.max(0, obstacle.width() - 16),
+                Math.max(0, obstacle.height() - 14),
+                Color.web("#5f3928"),
+                Color.web("#d4af37"),
+                14
+        );
+        doorLeaf.setLayoutX(8);
+        doorLeaf.setLayoutY(7);
+
+        Rectangle barTop = buildArenaRectangle(obstacle.width() * 0.68, 10, Color.web("#9b7d56"), Color.TRANSPARENT, 8);
+        barTop.setLayoutX(obstacle.width() * 0.16);
+        barTop.setLayoutY(obstacle.height() * 0.32);
+
+        Rectangle barBottom = buildArenaRectangle(obstacle.width() * 0.68, 10, Color.web("#9b7d56"), Color.TRANSPARENT, 8);
+        barBottom.setLayoutX(obstacle.width() * 0.16);
+        barBottom.setLayoutY(obstacle.height() * 0.60);
+
+        obstacleNode.getChildren().addAll(frame, doorLeaf, barTop, barBottom);
+    }
+
+    private void populateRubbleNode(Pane obstacleNode, ArenaObstacle obstacle) {
+        Rectangle body = buildArenaRectangle(
+                obstacle.width(),
+                obstacle.height(),
+                Color.web("#66554a"),
+                Color.web("#8a7361"),
+                20
+        );
+        Rectangle shardOne = buildArenaRectangle(obstacle.width() * 0.34, obstacle.height() * 0.28, Color.web("#857263"), Color.TRANSPARENT, 10);
+        shardOne.setLayoutX(obstacle.width() * 0.12);
+        shardOne.setLayoutY(obstacle.height() * 0.18);
+        Rectangle shardTwo = buildArenaRectangle(obstacle.width() * 0.28, obstacle.height() * 0.24, Color.web("#736153"), Color.TRANSPARENT, 10);
+        shardTwo.setLayoutX(obstacle.width() * 0.56);
+        shardTwo.setLayoutY(obstacle.height() * 0.44);
+        obstacleNode.getChildren().addAll(body, shardOne, shardTwo);
+    }
+
+    private void populatePillarNode(Pane obstacleNode, ArenaObstacle obstacle) {
+        Rectangle base = buildArenaRectangle(
+                obstacle.width(),
+                obstacle.height(),
+                Color.web("#505767"),
+                Color.web("#848c9f"),
+                26
+        );
+        Rectangle core = buildArenaRectangle(
+                obstacle.width() * 0.58,
+                obstacle.height() * 0.58,
+                Color.web("#3f4758"),
+                Color.TRANSPARENT,
+                18
+        );
+        core.setLayoutX((obstacle.width() - core.getWidth()) / 2);
+        core.setLayoutY((obstacle.height() - core.getHeight()) / 2);
+        obstacleNode.getChildren().addAll(base, core);
+    }
+
+    private Rectangle buildArenaRectangle(double width, double height, Color fill, Color stroke, double arc) {
+        Rectangle rectangle = new Rectangle(width, height);
+        rectangle.setArcWidth(arc);
+        rectangle.setArcHeight(arc);
+        rectangle.setFill(fill);
+        rectangle.setStroke(stroke);
+        rectangle.setStrokeWidth(stroke == Color.TRANSPARENT ? 0 : 2);
+        return rectangle;
+    }
+
+    private List<ArenaObstacle> buildArenaObstacles() {
+        List<ArenaObstacle> obstacles = new ArrayList<>();
+        int columns = Math.max(1, (int) Math.floor(BOARD_WIDTH / TILE_SIZE));
+        int rows = Math.max(1, (int) Math.floor(BOARD_HEIGHT / TILE_SIZE));
+        int levelNumber = currentGameState.getCurrentLevel().getNumber();
+
+        if (levelNumber == 1) {
+            addForestArenaObstacles(obstacles, rows, columns);
+        } else if (levelNumber == 2) {
+            addPursuitArenaObstacles(obstacles);
+        } else if (levelNumber == 3) {
+            addBossArenaObstacles(obstacles);
+        }
+
+        return obstacles;
+    }
+
+    private void addForestArenaObstacles(List<ArenaObstacle> obstacles, int rows, int columns) {
+        for (int row = 0; row < rows; row++) {
+            for (int column = 0; column < columns; column++) {
+                if (!isForestTreeTile(row, column, rows, columns)) {
+                    continue;
+                }
+                obstacles.add(new ArenaObstacle(
+                        column * TILE_SIZE + 6,
+                        row * TILE_SIZE + 6,
+                        TILE_SIZE - 14,
+                        TILE_SIZE - 14,
+                        ArenaObstacleStyle.TREE
+                ));
+            }
+        }
+
+        double fortressX = BOARD_WIDTH - 250;
+        double topWallHeight = DOOR_POSITION.getY() - 24;
+        double bottomWallY = DOOR_POSITION.getY() + DOOR_NODE_HEIGHT + 20;
+        obstacles.add(new ArenaObstacle(fortressX, 0, 250, topWallHeight, ArenaObstacleStyle.FORTRESS_WALL));
+        obstacles.add(new ArenaObstacle(
+                fortressX,
+                bottomWallY,
+                250,
+                BOARD_HEIGHT - bottomWallY,
+                ArenaObstacleStyle.FORTRESS_WALL
+        ));
+        obstacles.add(new ArenaObstacle(BOARD_WIDTH - 346, 0, 96, 116, ArenaObstacleStyle.FORTRESS_WALL));
+        obstacles.add(new ArenaObstacle(BOARD_WIDTH - 346, BOARD_HEIGHT - 116, 96, 116, ArenaObstacleStyle.FORTRESS_WALL));
+    }
+
+    private void addPursuitArenaObstacles(List<ArenaObstacle> obstacles) {
+        obstacles.add(new ArenaObstacle(610, 0, 178, 118, ArenaObstacleStyle.STONE_WALL));
+        obstacles.add(new ArenaObstacle(988, BOARD_HEIGHT - 118, 178, 118, ArenaObstacleStyle.STONE_WALL));
+        obstacles.add(new ArenaObstacle(648, 24, 102, 90, ArenaObstacleStyle.CLOSED_DOOR));
+        obstacles.add(new ArenaObstacle(1026, BOARD_HEIGHT - 114, 102, 90, ArenaObstacleStyle.CLOSED_DOOR));
+        obstacles.add(new ArenaObstacle(560, 220, 96, 126, ArenaObstacleStyle.PILLAR));
+        obstacles.add(new ArenaObstacle(858, 204, 132, 92, ArenaObstacleStyle.RUBBLE));
+        obstacles.add(new ArenaObstacle(964, 92, 124, 72, ArenaObstacleStyle.RUBBLE));
+        obstacles.add(new ArenaObstacle(952, 354, 130, 68, ArenaObstacleStyle.RUBBLE));
+    }
+
+    private void addBossArenaObstacles(List<ArenaObstacle> obstacles) {
+        obstacles.add(new ArenaObstacle(544, 124, 116, 116, ArenaObstacleStyle.PILLAR));
+        obstacles.add(new ArenaObstacle(544, 306, 116, 116, ArenaObstacleStyle.PILLAR));
+        obstacles.add(new ArenaObstacle(924, 124, 116, 116, ArenaObstacleStyle.PILLAR));
+        obstacles.add(new ArenaObstacle(924, 306, 116, 116, ArenaObstacleStyle.PILLAR));
     }
 
     private StackPane buildDoorNode() {
@@ -760,8 +995,8 @@ public class GameViewController {
             }
 
             ImageView imageView = new ImageView(loadEnemySprite(enemy));
-            double width = enemy instanceof BossEnemy ? 250 : enemy instanceof Slime ? 150 : 170;
-            double height = enemy instanceof BossEnemy ? 250 : enemy instanceof Slime ? 150 : 170;
+            double width = enemy instanceof BossEnemy ? 210 : enemy instanceof Slime ? 120 : 140;
+            double height = enemy instanceof BossEnemy ? 210 : enemy instanceof Slime ? 120 : 140;
             imageView.setFitWidth(width);
             imageView.setFitHeight(height);
             imageView.setPreserveRatio(true);
@@ -917,7 +1152,10 @@ public class GameViewController {
             Enemy enemy = aliveEnemies.get(index);
             synchronizedPositions.put(
                     enemy,
-                    enemyPositions.getOrDefault(enemy, computeEnemyPosition(index, aliveEnemies.size()))
+                    resolveArenaPosition(
+                            enemyPositions.getOrDefault(enemy, computeEnemyPosition(index, aliveEnemies.size())),
+                            enemyCollisionRadius(enemy)
+                    )
             );
         }
 
@@ -933,7 +1171,11 @@ public class GameViewController {
                 .toList();
 
         for (int index = 0; index < aliveEnemies.size(); index++) {
-            enemyPositions.put(aliveEnemies.get(index), computeEnemyPosition(index, aliveEnemies.size()));
+            Enemy enemy = aliveEnemies.get(index);
+            enemyPositions.put(
+                    enemy,
+                    resolveArenaPosition(computeEnemyPosition(index, aliveEnemies.size()), enemyCollisionRadius(enemy))
+            );
         }
     }
 
@@ -1181,6 +1423,101 @@ public class GameViewController {
         return new Point2D(clampedX, clampedY);
     }
 
+    private Point2D moveInsideArena(Point2D currentPosition, Point2D movementDelta, double radius) {
+        Point2D nextPosition = currentPosition;
+
+        if (movementDelta.getX() != 0) {
+            nextPosition = resolveArenaPosition(
+                    new Point2D(nextPosition.getX() + movementDelta.getX(), nextPosition.getY()),
+                    radius
+            );
+        }
+        if (movementDelta.getY() != 0) {
+            nextPosition = resolveArenaPosition(
+                    new Point2D(nextPosition.getX(), nextPosition.getY() + movementDelta.getY()),
+                    radius
+            );
+        }
+
+        return resolveArenaPosition(nextPosition, radius);
+    }
+
+    private Point2D resolveArenaPosition(Point2D candidatePosition, double radius) {
+        Point2D resolvedPosition = clampToBoard(candidatePosition, radius);
+
+        for (int iteration = 0; iteration < 4; iteration++) {
+            boolean adjusted = false;
+            for (ArenaObstacle obstacle : getActiveMovementObstacles()) {
+                Point2D collisionResolved = resolveCircleVsObstacle(resolvedPosition, radius, obstacle);
+                if (collisionResolved.distance(resolvedPosition) > 0.001d) {
+                    resolvedPosition = clampToBoard(collisionResolved, radius);
+                    adjusted = true;
+                }
+            }
+            if (!adjusted) {
+                break;
+            }
+        }
+
+        return resolvedPosition;
+    }
+
+    private List<ArenaObstacle> getActiveMovementObstacles() {
+        List<ArenaObstacle> activeObstacles = new ArrayList<>(arenaObstacles);
+        if (!canOpenDoor()) {
+            activeObstacles.add(buildMainDoorObstacle());
+        }
+        return activeObstacles;
+    }
+
+    private ArenaObstacle buildMainDoorObstacle() {
+        return new ArenaObstacle(
+                DOOR_POSITION.getX() + 10,
+                DOOR_POSITION.getY() + 6,
+                DOOR_NODE_WIDTH - 20,
+                DOOR_NODE_HEIGHT - 12,
+                ArenaObstacleStyle.CLOSED_DOOR
+        );
+    }
+
+    private Point2D resolveCircleVsObstacle(Point2D center, double radius, ArenaObstacle obstacle) {
+        double closestX = Math.max(obstacle.left(), Math.min(center.getX(), obstacle.right()));
+        double closestY = Math.max(obstacle.top(), Math.min(center.getY(), obstacle.bottom()));
+        double deltaX = center.getX() - closestX;
+        double deltaY = center.getY() - closestY;
+        double distanceSquared = deltaX * deltaX + deltaY * deltaY;
+
+        if (distanceSquared >= radius * radius) {
+            return center;
+        }
+
+        if (distanceSquared > 0.0001d) {
+            double distance = Math.sqrt(distanceSquared);
+            double pushDistance = radius - distance;
+            return new Point2D(
+                    center.getX() + (deltaX / distance) * pushDistance,
+                    center.getY() + (deltaY / distance) * pushDistance
+            );
+        }
+
+        double distanceToLeft = Math.abs(center.getX() - obstacle.left());
+        double distanceToRight = Math.abs(obstacle.right() - center.getX());
+        double distanceToTop = Math.abs(center.getY() - obstacle.top());
+        double distanceToBottom = Math.abs(obstacle.bottom() - center.getY());
+        double minimumDistance = Math.min(Math.min(distanceToLeft, distanceToRight), Math.min(distanceToTop, distanceToBottom));
+
+        if (minimumDistance == distanceToLeft) {
+            return new Point2D(obstacle.left() - radius, center.getY());
+        }
+        if (minimumDistance == distanceToRight) {
+            return new Point2D(obstacle.right() + radius, center.getY());
+        }
+        if (minimumDistance == distanceToTop) {
+            return new Point2D(center.getX(), obstacle.top() - radius);
+        }
+        return new Point2D(center.getX(), obstacle.bottom() + radius);
+    }
+
     private boolean isPlayerNearInteractiveItem() {
         return playerPosition.distance(getInteractiveItemCenter()) <= INTERACTION_RANGE;
     }
@@ -1200,12 +1537,12 @@ public class GameViewController {
 
     private double enemyCollisionRadius(Enemy enemy) {
         if (enemy instanceof BossEnemy) {
-            return 72;
+            return 60;
         }
         if (enemy instanceof Slime) {
-            return 44;
+            return 34;
         }
-        return 52;
+        return 40;
     }
 
     private Point2D getInteractiveItemCenter() {
@@ -1263,6 +1600,39 @@ public class GameViewController {
     }
 
     private record BoardPalette(Color primaryTileColor, Color secondaryTileColor, Color borderColor) {
+    }
+
+    private enum ArenaObstacleStyle {
+        TREE,
+        FORTRESS_WALL,
+        STONE_WALL,
+        CLOSED_DOOR,
+        RUBBLE,
+        PILLAR
+    }
+
+    private record ArenaObstacle(
+            double x,
+            double y,
+            double width,
+            double height,
+            ArenaObstacleStyle style
+    ) {
+        double left() {
+            return x;
+        }
+
+        double right() {
+            return x + width;
+        }
+
+        double top() {
+            return y;
+        }
+
+        double bottom() {
+            return y + height;
+        }
     }
 
     private record EnemyVisual(
