@@ -67,12 +67,14 @@
                                        wrapText="true" />
                                 <Label fx:id="playerStatsHudLabel" styleClass="body-label" text="ATK 10  DEF 5  SPD 8" wrapText="true" />
                                 <Label fx:id="playerElementHudLabel" styleClass="muted-label" text="Elemento non scelto" wrapText="true" />
+                                <Label fx:id="stonePowerHudLabel" styleClass="status-chip" text="Pietra: bloccata" wrapText="true" />
                                 <Label styleClass="muted-label" text="M-Inventario" wrapText="true" />
                                 <VBox maxWidth="394.0" spacing="2.0">
                                     <children>
                                         <Label styleClass="muted-label" text="WASD / Frecce - Muovi" wrapText="true" />
                                         <Label styleClass="muted-label" text="Space / Invio - Attacca" wrapText="true" />
                                         <Label styleClass="muted-label" text="E - Interagisci" wrapText="true" />
+                                        <Label styleClass="muted-label" text="R - Potere della Pietra" wrapText="true" />
                                         <Label styleClass="muted-label" text="M - Inventario" wrapText="true" />
                                     </children>
                                 </VBox>
@@ -186,6 +188,55 @@
                         </HBox>
                         <Label fx:id="inventoryOverlayFeedbackLabel" styleClass="feedback-label" wrapText="true" />
                         <VBox fx:id="inventoryOverlayListBox" spacing="10.0" />
+                    </children>
+                </VBox>
+            </children>
+        </StackPane>
+        <StackPane fx:id="rewardChoiceOverlay" managed="false" visible="false">
+            <children>
+                <Pane styleClass="inventory-overlay-backdrop" />
+                <VBox maxWidth="720.0" prefWidth="720.0" spacing="18.0" styleClass="reward-choice-card">
+                    <padding>
+                        <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
+                    </padding>
+                    <children>
+                        <Label styleClass="section-title" text="Reward Livello 2" />
+                        <Label fx:id="rewardChoiceDescriptionLabel"
+                               styleClass="body-label"
+                               text="Scegli una reward."
+                               wrapText="true" />
+                        <HBox spacing="16.0">
+                            <children>
+                                <Button fx:id="rewardPotionButton"
+                                        maxWidth="1.7976931348623157E308"
+                                        mnemonicParsing="false"
+                                        onAction="#handleChoosePotionReward"
+                                        text="1 - Pozione curativa">
+                                    <styleClass>
+                                        <String fx:value="menu-button" />
+                                        <String fx:value="primary-button" />
+                                        <String fx:value="reward-option-button" />
+                                    </styleClass>
+                                    <HBox.hgrow>
+                                        <Priority fx:value="ALWAYS" />
+                                    </HBox.hgrow>
+                                </Button>
+                                <Button fx:id="rewardHelmetButton"
+                                        maxWidth="1.7976931348623157E308"
+                                        mnemonicParsing="false"
+                                        onAction="#handleChooseHelmetReward"
+                                        text="2 - Elmo +2 DEF">
+                                    <styleClass>
+                                        <String fx:value="menu-button" />
+                                        <String fx:value="secondary-button" />
+                                        <String fx:value="reward-option-button" />
+                                    </styleClass>
+                                    <HBox.hgrow>
+                                        <Priority fx:value="ALWAYS" />
+                                    </HBox.hgrow>
+                                </Button>
+                            </children>
+                        </HBox>
                     </children>
                 </VBox>
             </children>

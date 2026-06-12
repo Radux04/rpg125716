@@ -125,6 +125,14 @@ public class GameService {
     }
 
     public CombatTurnResult attackCurrentLevelEnemy(Enemy enemy) {
+        return resolveCurrentLevelAttack(enemy, true);
+    }
+
+    public CombatTurnResult attackCurrentLevelEnemyWithoutCounterAttack(Enemy enemy) {
+        return resolveCurrentLevelAttack(enemy, false);
+    }
+
+    private CombatTurnResult resolveCurrentLevelAttack(Enemy enemy, boolean enemyCanCounterAttack) {
         ensureLevelStarted();
         Enemy enemyToAttack = requireAttackableEnemy(enemy);
         Player player = gameController.requireCurrentSession().getPlayer();
@@ -133,7 +141,7 @@ public class GameService {
         CombatResult playerActionResult = combatService.playerAttack(player, enemyToAttack);
         CombatResult enemyActionResult = null;
 
-        if (enemyToAttack.isAlive() && player.isAlive()) {
+        if (enemyCanCounterAttack && enemyToAttack.isAlive() && player.isAlive()) {
             enemyActionResult = combatService.enemyAttack(enemyToAttack, player);
         }
 

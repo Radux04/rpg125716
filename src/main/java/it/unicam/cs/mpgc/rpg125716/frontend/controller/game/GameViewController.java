@@ -77,6 +77,14 @@ public class GameViewController {
     private static final double INTERACTION_RANGE = 110;
     private static final double MELEE_ATTACK_RANGE = 170;
     private static final double ATTACK_COOLDOWN_SECONDS = 0.45;
+    private static final double FIREBALL_SPEED = 860;
+    private static final double WATER_SURGE_DURATION_SECONDS = 10;
+    private static final double WIND_TORNADO_DURATION_SECONDS = 10;
+    private static final double WIND_TORNADO_TICK_SECONDS = 2;
+    private static final double HEART_PULSE_DURATION_SECONDS = 1.4;
+    private static final double WATER_KNOCKBACK_DISTANCE = 180;
+    private static final int STONE_POWER_HIT_CHARGE_TARGET = 5;
+    private static final int STONE_POWER_HIT_TAKEN_CHARGE_TARGET = 3;
     private static final double MAX_FRAME_DELTA_SECONDS = 0.05;
     private static final Color TILE_COLOR = Color.web("#1e1826");
     private static final Color TILE_ALT_COLOR = Color.web("#231c2d");
@@ -92,6 +100,10 @@ public class GameViewController {
     private static final Color REWARD_COLOR = Color.web("#6b3fa0");
     private static final Color DOOR_LOCKED_COLOR = Color.web("#41304d");
     private static final Color DOOR_OPEN_COLOR = Color.web("#d4af37");
+    private static final Color FIRE_POWER_COLOR = Color.web("#ff7b39");
+    private static final Color WATER_POWER_COLOR = Color.web("#3fb9d8");
+    private static final Color WIND_POWER_COLOR = Color.web("#93d7f7");
+    private static final Color HEART_POWER_COLOR = Color.web("#ff647f");
 
     private final SceneNavigator sceneNavigator;
     private final GameService gameService;
@@ -103,13 +115,20 @@ public class GameViewController {
     private final Map<Enemy, EnemyVisual> enemyVisuals = new IdentityHashMap<>();
     private final Map<Class<? extends Enemy>, Image> enemySpriteCache = new HashMap<>();
     private final List<ArenaObstacle> arenaObstacles = new ArrayList<>();
+    private final List<ProjectileEffect> activeProjectiles = new ArrayList<>();
 
     private Enemy selectedEnemy;
     private boolean inventoryOverlayOpen;
     private boolean attackRequested;
     private boolean interactionRequested;
+    private boolean specialPowerRequested;
     private long lastFrameNanos;
     private double attackCooldownRemaining;
+    private double waterSurgeRemaining;
+    private Enemy windTornadoEnemy;
+    private double windTornadoRemaining;
+    private double windTornadoTickAccumulator;
+    private double heartPulseRemaining;
     private Point2D playerPosition = PLAYER_START_POSITION;
     private Scene boundScene;
     private AnimationTimer gameLoop;
@@ -122,6 +141,7 @@ public class GameViewController {
     private Circle itemCore;
     private Label itemNodeLabel;
     private ImageView itemSpriteView;
+    private Pane specialEffectsPane;
 
     @FXML
     private StackPane gameViewRoot;
@@ -146,6 +166,8 @@ public class GameViewController {
     @FXML
     private Label playerElementHudLabel;
     @FXML
+    private Label stonePowerHudLabel;
+    @FXML
     private Label contextualHintLabel;
     @FXML
     private Label remainingEnemiesHudLabel;
@@ -161,6 +183,14 @@ public class GameViewController {
     private VBox inventoryOverlayListBox;
     @FXML
     private Label inventoryOverlayFeedbackLabel;
+    @FXML
+    private StackPane rewardChoiceOverlay;
+    @FXML
+    private Label rewardChoiceDescriptionLabel;
+    @FXML
+    private Button rewardPotionButton;
+    @FXML
+    private Button rewardHelmetButton;
 
     public GameViewController(
             SceneNavigator sceneNavigator,
@@ -178,6 +208,8 @@ public class GameViewController {
         gameBoardPane.setPrefSize(BOARD_WIDTH, BOARD_HEIGHT);
         inventoryOverlay.setManaged(false);
         inventoryOverlay.setVisible(false);
+        rewardChoiceOverlay.setManaged(false);
+        rewardChoiceOverlay.setVisible(false);
 
         initializeRuntimeState();
         initializeBoardScene();
@@ -271,10 +303,11 @@ public class GameViewController {
         gameBoardPane.getChildren().clear();
         renderBoardTiles();
         renderArenaStructures();
+        specialEffectsPane = buildSpecialEffectsPane();
         doorNode = buildDoorNode();
         itemNode = buildItemNode();
         playerNode = buildPlayerNode();
-        gameBoardPane.getChildren().addAll(doorNode, itemNode, playerNode);
+        gameBoardPane.getChildren().addAll(specialEffectsPane, doorNode, itemNode, playerNode);
         rebuildEnemyVisuals();
         renderDynamicScene();
     }
@@ -283,6 +316,7 @@ public class GameViewController {
         currentGameState = gameService.getCurrentGameState();
         synchronizeEnemyPositionsWithCurrentLevel();
         ensureSelectedEnemy();
+        updateRewardChoiceOverlay();
         updateHud();
         renderDynamicScene();
 
@@ -319,6 +353,10 @@ public class GameViewController {
         KeyCode keyCode = event.getCode();
 
         if (keyCode == KeyCode.M) {
+            if (hasPendingRewardChoice()) {
+                event.consume();
+                return;
+            }
             if (inventoryOverlayOpen) {
                 closeInventoryOverlay();
             } else {
@@ -341,6 +379,11 @@ public class GameViewController {
             return;
         }
 
+        if (hasPendingRewardChoice()) {
+            event.consume();
+            return;
+        }
+
         if (keyCode == KeyCode.SPACE || keyCode == KeyCode.ENTER) {
             attackRequested = true;
             event.consume();
@@ -349,6 +392,12 @@ public class GameViewController {
 
         if (keyCode == KeyCode.E) {
             interactionRequested = true;
+            event.consume();
+            return;
+        }
+
+        if (keyCode == KeyCode.R) {
+            specialPowerRequested = true;
             event.consume();
             return;
         }
@@ -371,10 +420,11 @@ public class GameViewController {
         inventoryOverlayOpen = true;
         inventoryOverlay.setManaged(true);
         inventoryOverlay.setVisible(true);
-        gameContentPane.setMouseTransparent(true);
+        updateMouseTransparencyState();
         pressedKeys.clear();
         attackRequested = false;
         interactionRequested = false;
+        specialPowerRequested = false;
         renderInventoryOverlay();
         inventoryOverlay.requestFocus();
     }
@@ -383,7 +433,7 @@ public class GameViewController {
         inventoryOverlayOpen = false;
         inventoryOverlay.setVisible(false);
         inventoryOverlay.setManaged(false);
-        gameContentPane.setMouseTransparent(false);
+        updateMouseTransparencyState();
         inventoryOverlayFeedbackLabel.setText("");
         gameViewRoot.requestFocus();
         lastFrameNanos = 0L;
@@ -417,22 +467,27 @@ public class GameViewController {
         pressedKeys.clear();
         attackRequested = false;
         interactionRequested = false;
+        specialPowerRequested = false;
         lastFrameNanos = 0L;
     }
 
     private void updateFrame(double deltaSeconds) {
-        if (!inventoryOverlayOpen && currentGameState.getPlayer().isAlive()) {
+        if (!inventoryOverlayOpen && !hasPendingRewardChoice() && currentGameState.getPlayer().isAlive()) {
+            updateStonePowerEffects(deltaSeconds);
             updatePlayerMovement(deltaSeconds);
             updateEnemyMovement(deltaSeconds);
             resolveEntityCollisions();
             processInteractionRequest();
+            processSpecialPowerRequest();
             processAttackRequest();
         } else {
             attackRequested = false;
             interactionRequested = false;
+            specialPowerRequested = false;
         }
 
         attackCooldownRemaining = Math.max(0, attackCooldownRemaining - deltaSeconds);
+        heartPulseRemaining = Math.max(0, heartPulseRemaining - deltaSeconds);
         updateHud();
         renderDynamicScene();
     }
@@ -455,6 +510,10 @@ public class GameViewController {
     private void updateEnemyMovement(double deltaSeconds) {
         for (Enemy enemy : currentGameState.getCurrentLevel().getEnemies()) {
             if (!enemy.isAlive()) {
+                continue;
+            }
+
+            if (enemy.equals(windTornadoEnemy) && windTornadoRemaining > 0) {
                 continue;
             }
 
@@ -591,14 +650,8 @@ public class GameViewController {
             return;
         }
 
-        try {
-            CombatTurnResult turnResult = gameService.attackCurrentLevelEnemy(selectedEnemy);
-            currentGameState = turnResult.getCurrentGameState();
-            attackCooldownRemaining = ATTACK_COOLDOWN_SECONDS;
-            refreshView();
-        } catch (RuntimeException exception) {
-            refreshView();
-        }
+        resolveAttackOnEnemy(selectedEnemy, shouldEnemyCounterAttackOnBasicAttack(selectedEnemy), true, true);
+        attackCooldownRemaining = ATTACK_COOLDOWN_SECONDS;
     }
 
     private void updateHud() {
@@ -617,12 +670,14 @@ public class GameViewController {
                         + "  SPD " + currentGameState.getPlayer().getSpeed()
                         + "  SCHIVA " + currentGameState.getPlayer().getDodgeChancePercentage() + "%"
         );
-        contextualHintLabel.setText(buildContextualHintText());
         playerElementHudLabel.setText(
                 currentGameState.getPlayer().getElementType() == null
                         ? "Elemento non scelto"
                         : "Elemento: " + currentGameState.getPlayer().getElementType().name()
+                        + "  |  Potere pietra: " + resolveStonePowerName()
         );
+        stonePowerHudLabel.setText(buildStonePowerHudText());
+        contextualHintLabel.setText(buildContextualHintText());
         remainingEnemiesHudLabel.setText("Nemici: " + currentLevel.getRemainingEnemies());
         doorStatusLabel.setText(canOpenDoor() ? "Porta aperta" : "Porta sigillata");
 
@@ -630,12 +685,16 @@ public class GameViewController {
             selectedEnemyLabel.setText("Nessun bersaglio");
             selectedEnemyStatsLabel.setText("Seleziona un nemico sulla mappa.");
         } else {
+            String windLockSuffix = selectedEnemy.equals(windTornadoEnemy) && windTornadoRemaining > 0
+                    ? "  TORNADO " + (int) Math.ceil(windTornadoRemaining) + "s"
+                    : "";
             selectedEnemyLabel.setText(selectedEnemy.getName());
             selectedEnemyStatsLabel.setText(
                     "HP " + selectedEnemy.getHp()
                             + "  ATK " + selectedEnemy.getAttack()
                             + "  DEF " + selectedEnemy.getDefense()
                             + (isEnemyInAttackRange(selectedEnemy) ? "  IN PORTATA" : "  FUORI PORTATA")
+                            + windLockSuffix
             );
         }
     }
@@ -645,6 +704,8 @@ public class GameViewController {
         renderItemNodeState();
         renderPlayerNodeState();
         renderEnemyNodeStates();
+        renderStonePowerEffects();
+        updateRewardChoiceOverlay();
     }
 
     private void renderBoardTiles() {
@@ -992,6 +1053,14 @@ public class GameViewController {
         return builtItemNode;
     }
 
+    private Pane buildSpecialEffectsPane() {
+        Pane pane = new Pane();
+        pane.setManaged(false);
+        pane.setMouseTransparent(true);
+        pane.setPrefSize(BOARD_WIDTH, BOARD_HEIGHT);
+        return pane;
+    }
+
     private void rebuildEnemyVisuals() {
         enemyVisuals.values().forEach(enemyVisual -> {
             if (enemyVisual.rangeIndicator() != null) {
@@ -1244,6 +1313,16 @@ public class GameViewController {
         }
     }
 
+    @FXML
+    private void handleChoosePotionReward() {
+        handleChooseReward(LevelRewardChoice.HEALING_POTION);
+    }
+
+    @FXML
+    private void handleChooseHelmetReward() {
+        handleChooseReward(LevelRewardChoice.DEFENSE_HELMET);
+    }
+
     private void handleUseInventoryOverlayItem(Item item) {
         try {
             if (item instanceof Potion) {
@@ -1279,6 +1358,10 @@ public class GameViewController {
         appendDeltaLine(summaryBuilder, "ATK", playerAfterAdvance.getAttack() - playerBeforeAdvance.getAttack());
         appendDeltaLine(summaryBuilder, "DEF", playerAfterAdvance.getDefense() - playerBeforeAdvance.getDefense());
         appendDeltaLine(summaryBuilder, "SPD", playerAfterAdvance.getSpeed() - playerBeforeAdvance.getSpeed());
+
+        if (!playerBeforeAdvance.isStoneSuperPowerUnlocked() && playerAfterAdvance.isStoneSuperPowerUnlocked()) {
+            appendProgressionLine(summaryBuilder, "Pietra sbloccata: " + resolveStonePowerName(playerAfterAdvance) + " [R]");
+        }
 
         return summaryBuilder.toString();
     }
@@ -1357,6 +1440,9 @@ public class GameViewController {
         }
 
         if (currentGameState.getCurrentLevel().getRemainingEnemies() > 0) {
+            if (currentGameState.getCurrentLevel().getNumber() == 2) {
+                return "Sconfiggi entrambi i nemici per sbloccare la scelta tra pozione ed elmo +2 DEF.";
+            }
             return "Muoviti nell'arena, evita i nemici e attacca quando il bersaglio e in portata.";
         }
 
@@ -1371,7 +1457,7 @@ public class GameViewController {
         }
 
         if (hasPendingRewardChoice()) {
-            return "Scegli una ricompensa prima di aprire la porta.";
+            return "Entrambi i nemici sono sconfitti: scegli subito una ricompensa prima di aprire la porta.";
         }
 
         if (currentGameState.isDemoCompleted()) {
@@ -1389,17 +1475,28 @@ public class GameViewController {
         }
 
         if (hasPendingRewardChoice()) {
-            StringJoiner stringJoiner = new StringJoiner(
-                    "  |  ",
-                    "1-" + currentGameState.getCurrentLevel().getRewardChoices().size() + ": Ricompensa  |  ",
-                    ""
-            );
-            int optionIndex = 1;
-            for (LevelRewardChoice rewardChoice : currentGameState.getCurrentLevel().getRewardChoices().keySet()) {
-                stringJoiner.add(optionIndex + " " + rewardChoice.getLabel());
-                optionIndex++;
-            }
-            return stringJoiner.toString();
+            return "1 Pozione curativa  |  2 Elmo con +2 difesa";
+        }
+
+        if (currentGameState.getPlayer().canUseStoneSuperPower()) {
+            return "R - " + resolveStonePowerName() + " pronta all'uso";
+        }
+
+        if (waterSurgeRemaining > 0) {
+            return "Acqua attiva per " + (int) Math.ceil(waterSurgeRemaining) + "s: ogni hit respinge il bersaglio.";
+        }
+
+        if (windTornadoEnemy != null && windTornadoRemaining > 0) {
+            return "Tornado attivo su " + windTornadoEnemy.getName()
+                    + " per " + (int) Math.ceil(windTornadoRemaining) + "s.";
+        }
+
+        if (currentGameState.getPlayer().isStoneSuperPowerUnlocked()) {
+            return "Ricarica pietra: "
+                    + currentGameState.getPlayer().getStonePowerHitsDealtCharge() + "/" + STONE_POWER_HIT_CHARGE_TARGET
+                    + " hit oppure "
+                    + currentGameState.getPlayer().getStonePowerHitsTakenCharge() + "/" + STONE_POWER_HIT_TAKEN_CHARGE_TARGET
+                    + " colpi subiti.";
         }
 
         if (selectedEnemy != null && !isEnemyInAttackRange(selectedEnemy)) {
@@ -1415,6 +1512,337 @@ public class GameViewController {
         }
 
         return "";
+    }
+
+    private String buildStonePowerHudText() {
+        Player player = currentGameState.getPlayer();
+        if (player.getElementType() == null) {
+            return "Pietra: nessun elemento";
+        }
+
+        if (!player.isStoneSuperPowerUnlocked()) {
+            return "Pietra: bloccata fino al level up del livello 2";
+        }
+
+        if (player.canUseStoneSuperPower()) {
+            return "Pietra: pronta [R] - " + resolveStonePowerName(player);
+        }
+
+        if (waterSurgeRemaining > 0) {
+            return "Pietra: Acqua attiva " + (int) Math.ceil(waterSurgeRemaining) + "s";
+        }
+
+        if (windTornadoEnemy != null && windTornadoRemaining > 0) {
+            return "Pietra: Tornado attivo " + (int) Math.ceil(windTornadoRemaining) + "s";
+        }
+
+        return "Pietra: ricarica "
+                + player.getStonePowerHitsDealtCharge() + "/" + STONE_POWER_HIT_CHARGE_TARGET
+                + " hit oppure "
+                + player.getStonePowerHitsTakenCharge() + "/" + STONE_POWER_HIT_TAKEN_CHARGE_TARGET
+                + " colpi";
+    }
+
+    private void processSpecialPowerRequest() {
+        if (!specialPowerRequested) {
+            return;
+        }
+
+        specialPowerRequested = false;
+        Player player = currentGameState.getPlayer();
+        if (!player.canUseStoneSuperPower()) {
+            return;
+        }
+
+        ElementType elementType = player.getElementType();
+        if (elementType == null) {
+            return;
+        }
+
+        switch (elementType) {
+            case FIRE -> activateFireStonePower(player);
+            case WATER -> activateWaterStonePower(player);
+            case WIND -> activateWindStonePower(player);
+            case EARTH -> activateHeartStonePower(player);
+        }
+    }
+
+    private void activateFireStonePower(Player player) {
+        if (selectedEnemy == null || !selectedEnemy.isAlive()) {
+            return;
+        }
+
+        player.consumeStoneSuperPower();
+        activeProjectiles.add(new ProjectileEffect(selectedEnemy, playerPosition, FIREBALL_SPEED, FIRE_POWER_COLOR, 16));
+    }
+
+    private void activateWaterStonePower(Player player) {
+        player.consumeStoneSuperPower();
+        waterSurgeRemaining = WATER_SURGE_DURATION_SECONDS;
+    }
+
+    private void activateWindStonePower(Player player) {
+        if (selectedEnemy == null || !selectedEnemy.isAlive()) {
+            return;
+        }
+
+        player.consumeStoneSuperPower();
+        windTornadoEnemy = selectedEnemy;
+        windTornadoRemaining = WIND_TORNADO_DURATION_SECONDS;
+        windTornadoTickAccumulator = 0;
+    }
+
+    private void activateHeartStonePower(Player player) {
+        player.consumeStoneSuperPower();
+        player.setCurrentHp(player.getMaxHp());
+        heartPulseRemaining = HEART_PULSE_DURATION_SECONDS;
+    }
+
+    private void updateStonePowerEffects(double deltaSeconds) {
+        updateWaterStonePower(deltaSeconds);
+        updateWindStonePower(deltaSeconds);
+        updateFireballProjectiles(deltaSeconds);
+    }
+
+    private void updateWaterStonePower(double deltaSeconds) {
+        waterSurgeRemaining = Math.max(0, waterSurgeRemaining - deltaSeconds);
+    }
+
+    private void updateWindStonePower(double deltaSeconds) {
+        if (windTornadoEnemy == null) {
+            windTornadoRemaining = 0;
+            windTornadoTickAccumulator = 0;
+            return;
+        }
+
+        if (!windTornadoEnemy.isAlive()) {
+            clearWindTornado();
+            return;
+        }
+
+        windTornadoRemaining = Math.max(0, windTornadoRemaining - deltaSeconds);
+        windTornadoTickAccumulator += deltaSeconds;
+
+        while (windTornadoRemaining > 0
+                && windTornadoTickAccumulator >= WIND_TORNADO_TICK_SECONDS
+                && windTornadoEnemy.isAlive()) {
+            windTornadoTickAccumulator -= WIND_TORNADO_TICK_SECONDS;
+            resolveAttackOnEnemy(windTornadoEnemy, false, false, false);
+        }
+
+        if (windTornadoRemaining <= 0 || !windTornadoEnemy.isAlive()) {
+            clearWindTornado();
+        }
+    }
+
+    private void updateFireballProjectiles(double deltaSeconds) {
+        if (activeProjectiles.isEmpty()) {
+            return;
+        }
+
+        List<ProjectileEffect> resolvedProjectiles = new ArrayList<>();
+        for (ProjectileEffect projectile : activeProjectiles) {
+            Enemy targetEnemy = projectile.targetEnemy();
+            if (targetEnemy == null || !targetEnemy.isAlive()) {
+                continue;
+            }
+
+            Point2D targetPosition = enemyPositions.get(targetEnemy);
+            if (targetPosition == null) {
+                continue;
+            }
+
+            Point2D direction = targetPosition.subtract(projectile.position());
+            double distance = direction.magnitude();
+            if (distance <= projectile.speed() * deltaSeconds) {
+                resolveAttackOnEnemy(targetEnemy, false, true, false);
+                continue;
+            }
+
+            Point2D nextPosition = projectile.position().add(direction.normalize().multiply(projectile.speed() * deltaSeconds));
+            resolvedProjectiles.add(projectile.withPosition(nextPosition));
+        }
+
+        activeProjectiles.clear();
+        activeProjectiles.addAll(resolvedProjectiles);
+    }
+
+    private void resolveAttackOnEnemy(
+            Enemy enemy,
+            boolean enemyCanCounterAttack,
+            boolean countsTowardStoneCharge,
+            boolean applyWaterKnockback
+    ) {
+        try {
+            CombatTurnResult turnResult = enemyCanCounterAttack
+                    ? gameService.attackCurrentLevelEnemy(enemy)
+                    : gameService.attackCurrentLevelEnemyWithoutCounterAttack(enemy);
+            applyCombatTurnResult(enemy, turnResult, countsTowardStoneCharge, applyWaterKnockback);
+        } catch (RuntimeException exception) {
+            refreshView();
+        }
+    }
+
+    private void applyCombatTurnResult(
+            Enemy enemy,
+            CombatTurnResult turnResult,
+            boolean countsTowardStoneCharge,
+            boolean applyWaterKnockback
+    ) {
+        currentGameState = turnResult.getCurrentGameState();
+        Player player = currentGameState.getPlayer();
+
+        if (countsTowardStoneCharge && turnResult.getPlayerActionResult().getDamage() > 0) {
+            player.registerStonePowerHitDealt();
+        }
+        if (countsTowardStoneCharge
+                && turnResult.getEnemyActionResult() != null
+                && turnResult.getEnemyActionResult().getDamage() > 0) {
+            player.registerStonePowerHitTaken();
+        }
+
+        if (applyWaterKnockback
+                && waterSurgeRemaining > 0
+                && enemy != null
+                && enemy.isAlive()
+                && turnResult.getPlayerActionResult().getDamage() > 0) {
+            pushEnemyAwayFromPlayer(enemy, WATER_KNOCKBACK_DISTANCE);
+        }
+
+        if (enemy != null && enemy.equals(windTornadoEnemy) && !enemy.isAlive()) {
+            clearWindTornado();
+        }
+
+        synchronizeEnemyPositionsWithCurrentLevel();
+        ensureSelectedEnemy();
+        updateRewardChoiceOverlay();
+    }
+
+    private void pushEnemyAwayFromPlayer(Enemy enemy, double distance) {
+        Point2D enemyPosition = enemyPositions.get(enemy);
+        if (enemyPosition == null) {
+            return;
+        }
+
+        Point2D direction = enemyPosition.subtract(playerPosition);
+        Point2D normal = direction.magnitude() < 0.001d ? new Point2D(1, 0) : direction.normalize();
+        Point2D pushedPosition = resolveArenaPosition(
+                enemyPosition.add(normal.multiply(distance)),
+                enemyCollisionRadius(enemy)
+        );
+        enemyPositions.put(enemy, pushedPosition);
+    }
+
+    private boolean shouldEnemyCounterAttackOnBasicAttack(Enemy enemy) {
+        return !enemy.equals(windTornadoEnemy) || windTornadoRemaining <= 0;
+    }
+
+    private void clearWindTornado() {
+        windTornadoEnemy = null;
+        windTornadoRemaining = 0;
+        windTornadoTickAccumulator = 0;
+    }
+
+    private void renderStonePowerEffects() {
+        if (specialEffectsPane == null) {
+            return;
+        }
+
+        specialEffectsPane.getChildren().clear();
+
+        if (waterSurgeRemaining > 0) {
+            Circle aura = new Circle(playerPosition.getX(), playerPosition.getY(), 52, WATER_POWER_COLOR);
+            aura.setOpacity(0.14);
+            aura.setStroke(WATER_POWER_COLOR);
+            aura.setStrokeWidth(4);
+            specialEffectsPane.getChildren().add(aura);
+        }
+
+        if (heartPulseRemaining > 0) {
+            Circle pulse = new Circle(playerPosition.getX(), playerPosition.getY(), 36 + (heartPulseRemaining * 18), HEART_POWER_COLOR);
+            pulse.setOpacity(0.18);
+            pulse.setStroke(HEART_POWER_COLOR);
+            pulse.setStrokeWidth(3);
+            specialEffectsPane.getChildren().add(pulse);
+        }
+
+        if (windTornadoEnemy != null && windTornadoRemaining > 0) {
+            Point2D windEnemyPosition = enemyPositions.get(windTornadoEnemy);
+            if (windEnemyPosition != null) {
+                Circle tornadoCore = new Circle(windEnemyPosition.getX(), windEnemyPosition.getY() + 16, 44, WIND_POWER_COLOR);
+                tornadoCore.setOpacity(0.12);
+                tornadoCore.setStroke(WIND_POWER_COLOR);
+                tornadoCore.setStrokeWidth(3);
+
+                Circle tornadoRingOne = new Circle(windEnemyPosition.getX(), windEnemyPosition.getY() - 12, 34);
+                tornadoRingOne.setFill(Color.TRANSPARENT);
+                tornadoRingOne.setStroke(WIND_POWER_COLOR);
+                tornadoRingOne.setStrokeWidth(3);
+                tornadoRingOne.setOpacity(0.8);
+
+                Circle tornadoRingTwo = new Circle(windEnemyPosition.getX(), windEnemyPosition.getY() + 18, 50);
+                tornadoRingTwo.setFill(Color.TRANSPARENT);
+                tornadoRingTwo.setStroke(WIND_POWER_COLOR);
+                tornadoRingTwo.setStrokeWidth(2);
+                tornadoRingTwo.setOpacity(0.55);
+
+                specialEffectsPane.getChildren().addAll(tornadoCore, tornadoRingOne, tornadoRingTwo);
+            }
+        }
+
+        for (ProjectileEffect projectile : activeProjectiles) {
+            Circle outerFireball = new Circle(projectile.position().getX(), projectile.position().getY(), projectile.radius(), projectile.color());
+            outerFireball.setOpacity(0.42);
+            Circle innerFireball = new Circle(projectile.position().getX(), projectile.position().getY(), projectile.radius() * 0.58, Color.web("#fff3c4"));
+            innerFireball.setOpacity(0.92);
+            specialEffectsPane.getChildren().addAll(outerFireball, innerFireball);
+        }
+
+        specialEffectsPane.toFront();
+        itemNode.toFront();
+        playerNode.toFront();
+        doorNode.toFront();
+    }
+
+    private void updateRewardChoiceOverlay() {
+        boolean visible = hasPendingRewardChoice();
+        rewardChoiceOverlay.setVisible(visible);
+        rewardChoiceOverlay.setManaged(visible);
+
+        if (visible) {
+            pressedKeys.clear();
+            attackRequested = false;
+            interactionRequested = false;
+            specialPowerRequested = false;
+            rewardChoiceDescriptionLabel.setText(
+                    "Scegli una reward per il livello 2: pozione curativa oppure elmo con +2 difesa."
+            );
+        }
+
+        rewardPotionButton.setDisable(!currentGameState.getCurrentLevel().getRewardChoices().containsKey(LevelRewardChoice.HEALING_POTION));
+        rewardHelmetButton.setDisable(!currentGameState.getCurrentLevel().getRewardChoices().containsKey(LevelRewardChoice.DEFENSE_HELMET));
+        updateMouseTransparencyState();
+    }
+
+    private void updateMouseTransparencyState() {
+        gameContentPane.setMouseTransparent(inventoryOverlayOpen || rewardChoiceOverlay.isVisible());
+    }
+
+    private String resolveStonePowerName() {
+        return resolveStonePowerName(currentGameState.getPlayer());
+    }
+
+    private String resolveStonePowerName(Player player) {
+        if (player.getElementType() == null) {
+            return "non disponibile";
+        }
+
+        return switch (player.getElementType()) {
+            case FIRE -> "FIRE - Palla di fuoco";
+            case WATER -> "WATER - Onda di spinta";
+            case WIND -> "WIND - Tornado";
+            case EARTH -> "HEART - Cura totale";
+        };
     }
 
     private Point2D resolveMovementDirection() {
@@ -1722,5 +2150,17 @@ public class GameViewController {
             double width,
             double height
     ) {
+    }
+
+    private record ProjectileEffect(
+            Enemy targetEnemy,
+            Point2D position,
+            double speed,
+            Color color,
+            double radius
+    ) {
+        ProjectileEffect withPosition(Point2D nextPosition) {
+            return new ProjectileEffect(targetEnemy, nextPosition, speed, color, radius);
+        }
     }
 }

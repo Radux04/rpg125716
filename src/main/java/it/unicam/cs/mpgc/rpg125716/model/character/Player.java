@@ -16,6 +16,8 @@ import java.util.Set;
 public class Player {
     private static final double DODGE_CHANCE_PER_SPEED_POINT = 0.01d;
     private static final double MAX_DODGE_CHANCE = 0.35d;
+    private static final int STONE_POWER_HITS_TO_RECHARGE = 5;
+    private static final int STONE_POWER_HITS_TAKEN_TO_RECHARGE = 3;
 
     private String name;
     private int level;
@@ -29,6 +31,10 @@ public class Player {
     private Inventory inventory;
     private ElementType elementType;
     private ElementalPower elementalPower;
+    private boolean stoneSuperPowerUnlocked;
+    private boolean stoneSuperPowerReady;
+    private int stonePowerHitsDealtCharge;
+    private int stonePowerHitsTakenCharge;
     private Set<AchievementType> unlockedAchievements;
 
     public Player() {
@@ -63,6 +69,10 @@ public class Player {
         this.inventory = new Inventory(other.inventory);
         this.elementType = other.elementType;
         this.elementalPower = copyElementalPower(other.elementalPower);
+        this.stoneSuperPowerUnlocked = other.stoneSuperPowerUnlocked;
+        this.stoneSuperPowerReady = other.stoneSuperPowerReady;
+        this.stonePowerHitsDealtCharge = other.stonePowerHitsDealtCharge;
+        this.stonePowerHitsTakenCharge = other.stonePowerHitsTakenCharge;
         this.unlockedAchievements = new LinkedHashSet<>(other.unlockedAchievements);
     }
 
@@ -131,6 +141,10 @@ public class Player {
         currentHp += 10;
         attack += 2;
         defense += 1;
+
+        if (level >= 3 && elementType != null) {
+            unlockStoneSuperPower();
+        }
     }
 
     @JsonIgnore
@@ -168,6 +182,45 @@ public class Player {
         return unlockedAchievements.contains(Objects.requireNonNull(achievementType, "achievementType cannot be null"));
     }
 
+    public void unlockStoneSuperPower() {
+        if (elementType == null || stoneSuperPowerUnlocked) {
+            return;
+        }
+
+        stoneSuperPowerUnlocked = true;
+        stoneSuperPowerReady = true;
+        stonePowerHitsDealtCharge = 0;
+        stonePowerHitsTakenCharge = 0;
+    }
+
+    public void consumeStoneSuperPower() {
+        if (!canUseStoneSuperPower()) {
+            throw new IllegalStateException("the stone super power is not ready");
+        }
+
+        stoneSuperPowerReady = false;
+        stonePowerHitsDealtCharge = 0;
+        stonePowerHitsTakenCharge = 0;
+    }
+
+    public void registerStonePowerHitDealt() {
+        if (!stoneSuperPowerUnlocked || stoneSuperPowerReady) {
+            return;
+        }
+
+        stonePowerHitsDealtCharge = Math.min(STONE_POWER_HITS_TO_RECHARGE, stonePowerHitsDealtCharge + 1);
+        refreshStoneSuperPowerCharge();
+    }
+
+    public void registerStonePowerHitTaken() {
+        if (!stoneSuperPowerUnlocked || stoneSuperPowerReady) {
+            return;
+        }
+
+        stonePowerHitsTakenCharge = Math.min(STONE_POWER_HITS_TAKEN_TO_RECHARGE, stonePowerHitsTakenCharge + 1);
+        refreshStoneSuperPowerCharge();
+    }
+
     public void setInventory(Inventory inventory) {
         this.inventory = inventory == null ? new Inventory() : inventory;
     }
@@ -182,8 +235,24 @@ public class Player {
         return Collections.unmodifiableSet(unlockedAchievements);
     }
 
+    @JsonIgnore
+    public boolean canUseStoneSuperPower() {
+        return stoneSuperPowerUnlocked && stoneSuperPowerReady && elementType != null;
+    }
+
     private int experienceToNextLevel() {
         return level * 100;
+    }
+
+    private void refreshStoneSuperPowerCharge() {
+        if (stonePowerHitsDealtCharge < STONE_POWER_HITS_TO_RECHARGE
+                && stonePowerHitsTakenCharge < STONE_POWER_HITS_TAKEN_TO_RECHARGE) {
+            return;
+        }
+
+        stoneSuperPowerReady = true;
+        stonePowerHitsDealtCharge = 0;
+        stonePowerHitsTakenCharge = 0;
     }
 
     private static ElementalPower copyElementalPower(ElementalPower elementalPower) {
