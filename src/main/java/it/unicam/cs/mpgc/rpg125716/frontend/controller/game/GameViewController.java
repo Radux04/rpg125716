@@ -1413,7 +1413,9 @@ public class GameViewController {
 
     private boolean hasPendingRewardChoice() {
         DemoLevel currentLevel = currentGameState.getCurrentLevel();
-        return currentLevel.hasRewardChoices() && !currentLevel.isRewardClaimed();
+        return currentLevel.isCompleted()
+                && currentLevel.hasRewardChoices()
+                && !currentLevel.isRewardClaimed();
     }
 
     private boolean needsElementChoice() {
