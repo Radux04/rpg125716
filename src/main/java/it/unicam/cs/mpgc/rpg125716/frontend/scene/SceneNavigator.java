@@ -60,9 +60,13 @@ public class SceneNavigator {
         show(GAME_OVERVIEW_FXML, currentGameState, feedbackMessage);
     }
 
-    public void showLevelTransitionToGameOverview(CurrentGameState currentGameState, String feedbackMessage) {
+    public void showLevelTransitionToGameOverview(
+            CurrentGameState currentGameState,
+            String feedbackMessage,
+            String progressionSummary
+    ) {
         Parent root = loadRoot(GAME_OVERVIEW_FXML, currentGameState, feedbackMessage);
-        showWithLevelTransition(root, currentGameState.getCurrentLevel().getName());
+        showWithLevelTransition(root, currentGameState.getCurrentLevel().getName(), progressionSummary);
     }
 
     public void showGameView(CurrentGameState currentGameState) {
@@ -133,9 +137,9 @@ public class SceneNavigator {
         stage.setScene(scene);
     }
 
-    private void showWithLevelTransition(Parent root, String levelTitle) {
+    private void showWithLevelTransition(Parent root, String levelTitle, String progressionSummary) {
         StackPane sceneRoot = new StackPane(root);
-        StackPane transitionOverlay = buildLevelTransitionOverlay(levelTitle);
+        StackPane transitionOverlay = buildLevelTransitionOverlay(levelTitle, progressionSummary);
         sceneRoot.getChildren().add(transitionOverlay);
 
         Scene scene = new Scene(sceneRoot, sceneWidth, sceneHeight);
@@ -145,7 +149,7 @@ public class SceneNavigator {
         playLevelTransition(transitionOverlay);
     }
 
-    private StackPane buildLevelTransitionOverlay(String levelTitle) {
+    private StackPane buildLevelTransitionOverlay(String levelTitle, String progressionSummary) {
         Label eyebrowLabel = new Label("Nuovo Livello");
         eyebrowLabel.getStyleClass().add("level-transition-eyebrow");
 
@@ -157,6 +161,14 @@ public class SceneNavigator {
         VBox content = new VBox(14, eyebrowLabel, titleLabel);
         content.setAlignment(Pos.CENTER);
         content.setOpacity(0);
+
+        if (progressionSummary != null && !progressionSummary.isBlank()) {
+            Label summaryLabel = new Label(progressionSummary);
+            summaryLabel.getStyleClass().add("level-transition-summary");
+            summaryLabel.setWrapText(true);
+            summaryLabel.setMaxWidth(820);
+            content.getChildren().add(summaryLabel);
+        }
 
         StackPane overlay = new StackPane(content);
         overlay.getStyleClass().add("level-transition-overlay");

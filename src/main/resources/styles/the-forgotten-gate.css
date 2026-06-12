@@ -283,6 +283,22 @@
     -fx-alignment: center;
 }
 
+.level-transition-summary {
+    -fx-background-color: rgba(21, 18, 29, 0.88);
+    -fx-background-radius: 22;
+    -fx-border-color: rgba(212, 175, 55, 0.28);
+    -fx-border-radius: 22;
+    -fx-border-width: 1;
+    -fx-padding: 18 24 18 24;
+    -fx-font-family: "Space Grotesk", "Segoe UI Semibold", sans-serif;
+    -fx-text-fill: #f1edf8;
+    -fx-font-size: 19px;
+    -fx-font-weight: 700;
+    -fx-line-spacing: 6px;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+}
+
 .inventory-entry-card {
     -fx-padding: 14 16 14 16;
     -fx-alignment: center-left;
