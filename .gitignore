@@ -49,3 +49,5 @@ achievements.json
 achievements.xml
 
 .env
+wiki-publish-temp/
+wiki-remote-clone/

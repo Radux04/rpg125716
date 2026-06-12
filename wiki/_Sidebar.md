@@ -1,7 +1,0 @@
-- [Home](Home.md)
-- [Funzionalita Implementate](Funzionalita-Implementate.md)
-- [Architettura e Responsabilita](Architettura-e-Responsabilita.md)
-- [Classi e Interfacce](Classi-e-Interfacce.md)
-- [Dati e Persistenza](Dati-e-Persistenza.md)
-- [Estendibilita](Estendibilita.md)
-- [Dichiarazione Uso AI](Dichiarazione-Uso-AI.md)
