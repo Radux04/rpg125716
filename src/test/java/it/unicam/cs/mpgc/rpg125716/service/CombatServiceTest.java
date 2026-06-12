@@ -37,6 +37,17 @@ class CombatServiceTest {
     }
 
     @Test
+    void defeatingAnEnemyAwardsTheUpdatedExperienceAmount() {
+        Player player = new Player("Hero", 60, 30, 5, 8);
+        Slime slime = new Slime();
+        CombatService combatService = new CombatService(new GameEventDispatcher());
+
+        combatService.playerAttack(player, slime);
+
+        assertEquals(15, player.getExperience());
+    }
+
+    @Test
     void defeatingABossUnlocksBossSlayerAchievement() {
         Player player = new Player("Hero", 60, 30, 5, 8);
         BossEnemy bossEnemy = new BossEnemy();
