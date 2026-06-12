@@ -15,7 +15,7 @@ import java.util.Set;
 @Data
 public class Player {
     private static final double DODGE_CHANCE_PER_SPEED_POINT = 0.01d;
-    private static final double MAX_DODGE_CHANCE = 0.35d;
+    private static final double MAX_DODGE_CHANCE = 0.45d;
     private static final int STONE_POWER_HITS_TO_RECHARGE = 5;
     private static final int STONE_POWER_HITS_TAKEN_TO_RECHARGE = 3;
 
@@ -94,7 +94,7 @@ public class Player {
                 this.currentHp += 25;
                 this.speed += 5;
             }
-            case WIND -> this.speed += 20;
+            case WIND -> this.speed += 37;
             case EARTH -> {
                 this.defense += 5;
                 this.attack += 2;

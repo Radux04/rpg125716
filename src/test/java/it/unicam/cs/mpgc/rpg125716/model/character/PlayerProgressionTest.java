@@ -37,7 +37,7 @@ class PlayerProgressionTest {
         player.attuneToOriginStone(ElementType.WIND);
 
         assertEquals(ElementType.WIND, player.getElementType());
-        assertEquals(28, player.getDodgeChancePercentage());
+        assertEquals(45, player.getDodgeChancePercentage());
         assertTrue(player.getDodgeChancePercentage() > baseDodgeChance);
     }
 

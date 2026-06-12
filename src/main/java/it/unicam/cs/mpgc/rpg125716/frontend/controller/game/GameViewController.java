@@ -83,7 +83,7 @@ public class GameViewController {
     private static final double ATTACK_COOLDOWN_SECONDS = 0.45;
     private static final double FIREBALL_SPEED = 860;
     private static final double WATER_SURGE_DURATION_SECONDS = 10;
-    private static final double WIND_TORNADO_DURATION_SECONDS = 10;
+    private static final double WIND_TORNADO_DURATION_SECONDS = 5;
     private static final double WIND_TORNADO_TICK_SECONDS = 2;
     private static final double HEART_PULSE_DURATION_SECONDS = 1.4;
     private static final double WATER_KNOCKBACK_DISTANCE = 180;
