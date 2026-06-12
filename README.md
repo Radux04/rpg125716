@@ -10,16 +10,16 @@ Prerequisiti:
 - JDK 25
 - Gradle Wrapper incluso nel repository
 
-Per avviare il gioco:
-
-```powershell
-.\gradlew run
-```
-
 Per compilare il progetto:
 
 ```powershell
 .\gradlew build
+```
+
+Per avviare il gioco:
+
+```powershell
+.\gradlew run
 ```
 
 ## Uso di strumenti di AI
