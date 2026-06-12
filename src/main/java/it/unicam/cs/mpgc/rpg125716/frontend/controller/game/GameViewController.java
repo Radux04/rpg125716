@@ -200,6 +200,18 @@ public class GameViewController {
     @FXML
     private Label inventoryOverlayFeedbackLabel;
     @FXML
+    private StackPane elementChoiceOverlay;
+    @FXML
+    private Label elementChoiceDescriptionLabel;
+    @FXML
+    private Button elementFireButton;
+    @FXML
+    private Button elementWaterButton;
+    @FXML
+    private Button elementWindButton;
+    @FXML
+    private Button elementEarthButton;
+    @FXML
     private StackPane rewardChoiceOverlay;
     @FXML
     private Label rewardChoiceDescriptionLabel;
@@ -227,6 +239,8 @@ public class GameViewController {
         gameBoardPane.setClip(new Rectangle(DISPLAY_BOARD_WIDTH, DISPLAY_BOARD_HEIGHT));
         inventoryOverlay.setManaged(false);
         inventoryOverlay.setVisible(false);
+        elementChoiceOverlay.setManaged(false);
+        elementChoiceOverlay.setVisible(false);
         rewardChoiceOverlay.setManaged(false);
         rewardChoiceOverlay.setVisible(false);
 
@@ -340,6 +354,7 @@ public class GameViewController {
         currentGameState = gameService.getCurrentGameState();
         synchronizeEnemyPositionsWithCurrentLevel();
         ensureSelectedEnemy();
+        updateElementChoiceOverlay();
         updateRewardChoiceOverlay();
         updateHud();
         renderDynamicScene();
@@ -377,7 +392,7 @@ public class GameViewController {
         KeyCode keyCode = event.getCode();
 
         if (keyCode == KeyCode.M) {
-            if (hasPendingRewardChoice()) {
+            if (needsElementChoice() || hasPendingRewardChoice()) {
                 event.consume();
                 return;
             }
@@ -403,7 +418,7 @@ public class GameViewController {
             return;
         }
 
-        if (hasPendingRewardChoice()) {
+        if (needsElementChoice() || hasPendingRewardChoice()) {
             event.consume();
             return;
         }
@@ -496,7 +511,10 @@ public class GameViewController {
     }
 
     private void updateFrame(double deltaSeconds) {
-        if (!inventoryOverlayOpen && !hasPendingRewardChoice() && currentGameState.getPlayer().isAlive()) {
+        if (!inventoryOverlayOpen
+                && !needsElementChoice()
+                && !hasPendingRewardChoice()
+                && currentGameState.getPlayer().isAlive()) {
             updateStonePowerEffects(deltaSeconds);
             updatePlayerMovement(deltaSeconds);
             updateEnemyMovement(deltaSeconds);
@@ -729,6 +747,7 @@ public class GameViewController {
         renderPlayerNodeState();
         renderEnemyNodeStates();
         renderStonePowerEffects();
+        updateElementChoiceOverlay();
         updateRewardChoiceOverlay();
     }
 
@@ -1326,6 +1345,26 @@ public class GameViewController {
         }
     }
 
+    @FXML
+    private void handleChooseFireElement() {
+        handleChooseElement(ElementType.FIRE);
+    }
+
+    @FXML
+    private void handleChooseWaterElement() {
+        handleChooseElement(ElementType.WATER);
+    }
+
+    @FXML
+    private void handleChooseWindElement() {
+        handleChooseElement(ElementType.WIND);
+    }
+
+    @FXML
+    private void handleChooseEarthElement() {
+        handleChooseElement(ElementType.EARTH);
+    }
+
     private void handleChooseReward(LevelRewardChoice rewardChoice) {
         try {
             gameService.chooseCurrentLevelReward(rewardChoice);
@@ -1477,7 +1516,7 @@ public class GameViewController {
         }
 
         if (needsElementChoice()) {
-            return "Scegli un elemento per attivare la Pietra dell'Origine.";
+            return "Scegli un elemento cliccando uno dei quattro cerchi della Pietra dell'Origine.";
         }
 
         if (hasPendingRewardChoice()) {
@@ -1495,7 +1534,7 @@ public class GameViewController {
 
     private String buildContextualHintText() {
         if (needsElementChoice()) {
-            return "1-4: Scegli elemento  |  1 Fuoco, 2 Acqua, 3 Vento, 4 Terra";
+            return "Clicca un cerchio oppure premi 1-4  |  FIRE, WATER, WIND, EARTH";
         }
 
         if (hasPendingRewardChoice()) {
@@ -1875,8 +1914,35 @@ public class GameViewController {
         updateMouseTransparencyState();
     }
 
+    private void updateElementChoiceOverlay() {
+        boolean visible = needsElementChoice();
+        elementChoiceOverlay.setVisible(visible);
+        elementChoiceOverlay.setManaged(visible);
+
+        if (visible) {
+            pressedKeys.clear();
+            attackRequested = false;
+            interactionRequested = false;
+            specialPowerRequested = false;
+            elementChoiceDescriptionLabel.setText(
+                    "Scegli il potere della Pietra cliccando uno dei quattro cerchi elementali."
+            );
+        }
+
+        boolean hasElementChoice = currentGameState.getPlayer().getElementType() == null;
+        elementFireButton.setDisable(!hasElementChoice);
+        elementWaterButton.setDisable(!hasElementChoice);
+        elementWindButton.setDisable(!hasElementChoice);
+        elementEarthButton.setDisable(!hasElementChoice);
+        updateMouseTransparencyState();
+    }
+
     private void updateMouseTransparencyState() {
-        gameContentPane.setMouseTransparent(inventoryOverlayOpen || rewardChoiceOverlay.isVisible());
+        gameContentPane.setMouseTransparent(
+                inventoryOverlayOpen
+                        || elementChoiceOverlay.isVisible()
+                        || rewardChoiceOverlay.isVisible()
+        );
     }
 
     private String resolveStonePowerName() {
