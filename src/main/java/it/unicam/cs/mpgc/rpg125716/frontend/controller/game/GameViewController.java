@@ -19,20 +19,21 @@ import it.unicam.cs.mpgc.rpg125716.service.CombatResult;
 import it.unicam.cs.mpgc.rpg125716.service.CombatTurnResult;
 import it.unicam.cs.mpgc.rpg125716.service.CurrentGameState;
 import it.unicam.cs.mpgc.rpg125716.service.GameService;
+import javafx.animation.AnimationTimer;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.geometry.Point2D;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
@@ -40,21 +41,39 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.Scene;
 
 import java.io.InputStream;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.StringJoiner;
+import java.util.Set;
 
 public class GameViewController {
     private static final double BOARD_WIDTH = 1720;
     private static final double BOARD_HEIGHT = 620;
     private static final double TILE_SIZE = 102;
-    private static final Point2D PLAYER_POSITION = new Point2D(200, BOARD_HEIGHT / 2);
+    private static final double PLAYER_NODE_SIZE = 116;
+    private static final double ITEM_NODE_SIZE = 102;
+    private static final double DOOR_NODE_WIDTH = 104;
+    private static final double DOOR_NODE_HEIGHT = 136;
+    private static final Point2D PLAYER_START_POSITION = new Point2D(258, (BOARD_HEIGHT / 2) + 6);
     private static final Point2D ITEM_POSITION = new Point2D((BOARD_WIDTH / 2) - 46, BOARD_HEIGHT - 165);
     private static final Point2D DOOR_POSITION = new Point2D(BOARD_WIDTH - 170, 82);
+    private static final double PLAYER_COLLISION_RADIUS = 44;
+    private static final double PLAYER_MOVE_SPEED = 180;
+    private static final double PLAYER_SPEED_FACTOR = 8;
+    private static final double ENEMY_MOVE_SPEED = 96;
+    private static final double ENEMY_MOVE_SPEED_FACTOR = 3;
+    private static final double ENTITY_COLLISION_PADDING = 10;
+    private static final double INTERACTION_RANGE = 110;
+    private static final double MELEE_ATTACK_RANGE = 170;
+    private static final double ATTACK_COOLDOWN_SECONDS = 0.45;
+    private static final double MAX_FRAME_DELTA_SECONDS = 0.05;
     private static final Color TILE_COLOR = Color.web("#1e1826");
     private static final Color TILE_ALT_COLOR = Color.web("#231c2d");
     private static final Color WALL_COLOR = Color.web("#0f0c14");
@@ -71,12 +90,30 @@ public class GameViewController {
     private final SceneNavigator sceneNavigator;
     private final GameService gameService;
     private CurrentGameState currentGameState;
-    private final EventHandler<KeyEvent> globalKeyHandler = this::handleGlobalKeyPressed;
+    private final EventHandler<KeyEvent> globalKeyPressedHandler = this::handleGlobalKeyPressed;
+    private final EventHandler<KeyEvent> globalKeyReleasedHandler = this::handleGlobalKeyReleased;
+    private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
+    private final Map<Enemy, Point2D> enemyPositions = new LinkedHashMap<>();
+    private final Map<Enemy, EnemyVisual> enemyVisuals = new LinkedHashMap<>();
+    private final Map<Class<? extends Enemy>, Image> enemySpriteCache = new HashMap<>();
 
-    private final Map<Enemy, StackPane> enemyNodes = new LinkedHashMap<>();
     private Enemy selectedEnemy;
     private boolean inventoryOverlayOpen;
+    private boolean attackRequested;
+    private boolean interactionRequested;
+    private long lastFrameNanos;
+    private double attackCooldownRemaining;
+    private Point2D playerPosition = PLAYER_START_POSITION;
     private Scene boundScene;
+    private AnimationTimer gameLoop;
+    private StackPane playerNode;
+    private StackPane doorNode;
+    private Rectangle doorPortal;
+    private Label doorNodeLabel;
+    private StackPane itemNode;
+    private Circle itemHalo;
+    private Circle itemCore;
+    private Label itemNodeLabel;
 
     @FXML
     private StackPane gameViewRoot;
@@ -101,6 +138,10 @@ public class GameViewController {
     @FXML
     private Label playerElementHudLabel;
     @FXML
+    private Label controlsHintLabel;
+    @FXML
+    private Label contextualHintLabel;
+    @FXML
     private Label remainingEnemiesHudLabel;
     @FXML
     private Label doorStatusLabel;
@@ -114,18 +155,6 @@ public class GameViewController {
     private VBox inventoryOverlayListBox;
     @FXML
     private Label inventoryOverlayFeedbackLabel;
-    @FXML
-    private FlowPane rewardActionPane;
-    @FXML
-    private FlowPane elementActionPane;
-    @FXML
-    private Button attackButton;
-    @FXML
-    private Button usePotionButton;
-    @FXML
-    private Button claimDropButton;
-    @FXML
-    private Button advanceDoorButton;
 
     public GameViewController(
             SceneNavigator sceneNavigator,
@@ -143,9 +172,12 @@ public class GameViewController {
         gameBoardPane.setPrefSize(BOARD_WIDTH, BOARD_HEIGHT);
         inventoryOverlay.setManaged(false);
         inventoryOverlay.setVisible(false);
-        bindGlobalShortcuts();
 
+        initializeRuntimeState();
+        initializeBoardScene();
         refreshView();
+        bindGlobalShortcuts();
+        startGameLoop();
     }
 
     @FXML
@@ -155,17 +187,7 @@ public class GameViewController {
 
     @FXML
     private void handleAttackSelectedEnemy() {
-        if (selectedEnemy == null) {
-            return;
-        }
-
-        try {
-            CombatTurnResult turnResult = gameService.attackCurrentLevelEnemy(selectedEnemy);
-            currentGameState = turnResult.getCurrentGameState();
-            refreshView();
-        } catch (RuntimeException exception) {
-            refreshView();
-        }
+        attackRequested = true;
     }
 
     @FXML
@@ -177,7 +199,6 @@ public class GameViewController {
 
         try {
             gameService.useItem(potion.get());
-            currentGameState = gameService.getCurrentGameState();
             refreshView();
         } catch (RuntimeException exception) {
             refreshView();
@@ -187,13 +208,12 @@ public class GameViewController {
     @FXML
     private void handleClaimDrop() {
         DemoLevel currentLevel = currentGameState.getCurrentLevel();
-        Item completionDrop = currentLevel.getCompletionDrop();
-        if (completionDrop == null) {
+        if (currentLevel.getCompletionDrop() == null || !isPlayerNearInteractiveItem()) {
             return;
         }
 
         try {
-            currentGameState = gameService.claimCurrentLevelCompletionDrop();
+            gameService.claimCurrentLevelCompletionDrop();
             refreshView();
         } catch (RuntimeException exception) {
             refreshView();
@@ -202,16 +222,17 @@ public class GameViewController {
 
     @FXML
     private void handleAdvanceDoor() {
-        if (!canOpenDoor()) {
+        if (!canOpenDoor() || !isPlayerNearDoor()) {
             return;
         }
 
         try {
-            currentGameState = gameService.completeCurrentLevel();
-            String message = currentGameState.isDemoCompleted()
+            CurrentGameState nextState = gameService.completeCurrentLevel();
+            String message = nextState.isDemoCompleted()
                     ? "Hai completato la demo e sconfitto il boss finale."
                     : "Hai attraversato la porta. Il prossimo livello e pronto.";
-            sceneNavigator.showGameOverview(currentGameState, message);
+            stopGameLoop();
+            sceneNavigator.showGameOverview(nextState, message);
         } catch (RuntimeException exception) {
             refreshView();
         }
@@ -219,17 +240,33 @@ public class GameViewController {
 
     @FXML
     private void handleBack() {
+        stopGameLoop();
         sceneNavigator.showGameOverview(currentGameState, "Riepilogo della run aperto.");
+    }
+
+    private void initializeRuntimeState() {
+        playerPosition = clampToBoard(PLAYER_START_POSITION, PLAYER_COLLISION_RADIUS);
+        seedEnemyPositions();
+        ensureSelectedEnemy();
+    }
+
+    private void initializeBoardScene() {
+        gameBoardPane.getChildren().clear();
+        renderBoardTiles();
+        doorNode = buildDoorNode();
+        itemNode = buildItemNode();
+        playerNode = buildPlayerNode();
+        gameBoardPane.getChildren().addAll(doorNode, itemNode, playerNode);
+        rebuildEnemyVisuals();
+        renderDynamicScene();
     }
 
     private void refreshView() {
         currentGameState = gameService.getCurrentGameState();
+        synchronizeEnemyPositionsWithCurrentLevel();
         ensureSelectedEnemy();
         updateHud();
-        renderBoard();
-        renderRewardActions();
-        renderElementActions();
-        updateActionButtons();
+        renderDynamicScene();
 
         if (inventoryOverlayOpen) {
             renderInventoryOverlay();
@@ -239,10 +276,12 @@ public class GameViewController {
     private void bindGlobalShortcuts() {
         gameViewRoot.sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (oldScene != null) {
-                oldScene.removeEventFilter(KeyEvent.KEY_PRESSED, globalKeyHandler);
+                oldScene.removeEventFilter(KeyEvent.KEY_PRESSED, globalKeyPressedHandler);
+                oldScene.removeEventFilter(KeyEvent.KEY_RELEASED, globalKeyReleasedHandler);
             }
             if (newScene != null) {
-                newScene.addEventFilter(KeyEvent.KEY_PRESSED, globalKeyHandler);
+                newScene.addEventFilter(KeyEvent.KEY_PRESSED, globalKeyPressedHandler);
+                newScene.addEventFilter(KeyEvent.KEY_RELEASED, globalKeyReleasedHandler);
                 boundScene = newScene;
             }
         });
@@ -250,7 +289,8 @@ public class GameViewController {
         Platform.runLater(() -> {
             Scene scene = gameViewRoot.getScene();
             if (scene != null && scene != boundScene) {
-                scene.addEventFilter(KeyEvent.KEY_PRESSED, globalKeyHandler);
+                scene.addEventFilter(KeyEvent.KEY_PRESSED, globalKeyPressedHandler);
+                scene.addEventFilter(KeyEvent.KEY_RELEASED, globalKeyReleasedHandler);
                 boundScene = scene;
             }
             gameViewRoot.requestFocus();
@@ -258,7 +298,9 @@ public class GameViewController {
     }
 
     private void handleGlobalKeyPressed(KeyEvent event) {
-        if (event.getCode() == KeyCode.M) {
+        KeyCode keyCode = event.getCode();
+
+        if (keyCode == KeyCode.M) {
             if (inventoryOverlayOpen) {
                 closeInventoryOverlay();
             } else {
@@ -269,9 +311,40 @@ public class GameViewController {
         }
 
         if (inventoryOverlayOpen) {
-            if (event.getCode() == KeyCode.ESCAPE) {
+            if (keyCode == KeyCode.ESCAPE) {
                 closeInventoryOverlay();
             }
+            event.consume();
+            return;
+        }
+
+        if (handleContextualSelectionKey(keyCode)) {
+            event.consume();
+            return;
+        }
+
+        if (keyCode == KeyCode.SPACE || keyCode == KeyCode.ENTER) {
+            attackRequested = true;
+            event.consume();
+            return;
+        }
+
+        if (keyCode == KeyCode.E) {
+            interactionRequested = true;
+            event.consume();
+            return;
+        }
+
+        if (isMovementKey(keyCode)) {
+            pressedKeys.add(keyCode);
+            event.consume();
+        }
+    }
+
+    private void handleGlobalKeyReleased(KeyEvent event) {
+        pressedKeys.remove(event.getCode());
+
+        if (inventoryOverlayOpen && (isMovementKey(event.getCode()) || event.getCode() == KeyCode.E)) {
             event.consume();
         }
     }
@@ -281,6 +354,9 @@ public class GameViewController {
         inventoryOverlay.setManaged(true);
         inventoryOverlay.setVisible(true);
         gameContentPane.setMouseTransparent(true);
+        pressedKeys.clear();
+        attackRequested = false;
+        interactionRequested = false;
         renderInventoryOverlay();
         inventoryOverlay.requestFocus();
     }
@@ -292,6 +368,218 @@ public class GameViewController {
         gameContentPane.setMouseTransparent(false);
         inventoryOverlayFeedbackLabel.setText("");
         gameViewRoot.requestFocus();
+        lastFrameNanos = 0L;
+    }
+
+    private void startGameLoop() {
+        stopGameLoop();
+        gameLoop = new AnimationTimer() {
+            @Override
+            public void handle(long now) {
+                if (lastFrameNanos == 0L) {
+                    lastFrameNanos = now;
+                    updateHud();
+                    renderDynamicScene();
+                    return;
+                }
+
+                double deltaSeconds = Math.min((now - lastFrameNanos) / 1_000_000_000d, MAX_FRAME_DELTA_SECONDS);
+                lastFrameNanos = now;
+                updateFrame(deltaSeconds);
+            }
+        };
+        gameLoop.start();
+    }
+
+    private void stopGameLoop() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+            gameLoop = null;
+        }
+        pressedKeys.clear();
+        attackRequested = false;
+        interactionRequested = false;
+        lastFrameNanos = 0L;
+    }
+
+    private void updateFrame(double deltaSeconds) {
+        if (!inventoryOverlayOpen && currentGameState.getPlayer().isAlive()) {
+            updatePlayerMovement(deltaSeconds);
+            updateEnemyMovement(deltaSeconds);
+            resolveEntityCollisions();
+            processInteractionRequest();
+            processAttackRequest();
+        } else {
+            attackRequested = false;
+            interactionRequested = false;
+        }
+
+        attackCooldownRemaining = Math.max(0, attackCooldownRemaining - deltaSeconds);
+        updateHud();
+        renderDynamicScene();
+
+        if (inventoryOverlayOpen) {
+            renderInventoryOverlay();
+        }
+    }
+
+    private void updatePlayerMovement(double deltaSeconds) {
+        Point2D movementDirection = resolveMovementDirection();
+        if (movementDirection.magnitude() == 0) {
+            return;
+        }
+
+        double movementSpeed = PLAYER_MOVE_SPEED + currentGameState.getPlayer().getSpeed() * PLAYER_SPEED_FACTOR;
+        Point2D nextPosition = playerPosition.add(
+                movementDirection.normalize().multiply(movementSpeed * deltaSeconds)
+        );
+        playerPosition = clampToBoard(nextPosition, PLAYER_COLLISION_RADIUS);
+    }
+
+    private void updateEnemyMovement(double deltaSeconds) {
+        for (Enemy enemy : currentGameState.getCurrentLevel().getEnemies()) {
+            if (!enemy.isAlive()) {
+                continue;
+            }
+
+            Point2D enemyPosition = enemyPositions.get(enemy);
+            if (enemyPosition == null) {
+                continue;
+            }
+
+            int tileDistanceFromPlayer = (int) Math.round(enemyPosition.distance(playerPosition) / TILE_SIZE);
+            if (!enemy.shouldChasePlayer(tileDistanceFromPlayer)) {
+                continue;
+            }
+
+            Point2D direction = playerPosition.subtract(enemyPosition);
+            double minimumDistance = PLAYER_COLLISION_RADIUS + enemyCollisionRadius(enemy) + ENTITY_COLLISION_PADDING;
+            if (direction.magnitude() <= minimumDistance) {
+                continue;
+            }
+
+            double enemySpeed = ENEMY_MOVE_SPEED
+                    + enemy.getDetectionRange() * ENEMY_MOVE_SPEED_FACTOR
+                    + enemy.getAttack();
+
+            Point2D nextPosition = enemyPosition.add(direction.normalize().multiply(enemySpeed * deltaSeconds));
+            enemyPositions.put(enemy, clampToBoard(nextPosition, enemyCollisionRadius(enemy)));
+        }
+    }
+
+    private void resolveEntityCollisions() {
+        resolveEnemyEnemyCollisions();
+        resolvePlayerEnemyCollisions();
+    }
+
+    private void resolveEnemyEnemyCollisions() {
+        List<Enemy> aliveEnemies = currentGameState.getCurrentLevel().getEnemies().stream()
+                .filter(Enemy::isAlive)
+                .toList();
+
+        for (int firstIndex = 0; firstIndex < aliveEnemies.size(); firstIndex++) {
+            Enemy firstEnemy = aliveEnemies.get(firstIndex);
+            Point2D firstPosition = enemyPositions.get(firstEnemy);
+            if (firstPosition == null) {
+                continue;
+            }
+
+            for (int secondIndex = firstIndex + 1; secondIndex < aliveEnemies.size(); secondIndex++) {
+                Enemy secondEnemy = aliveEnemies.get(secondIndex);
+                Point2D secondPosition = enemyPositions.get(secondEnemy);
+                if (secondPosition == null) {
+                    continue;
+                }
+
+                double minimumDistance = enemyCollisionRadius(firstEnemy)
+                        + enemyCollisionRadius(secondEnemy)
+                        + ENTITY_COLLISION_PADDING;
+                Point2D delta = secondPosition.subtract(firstPosition);
+                double distance = delta.magnitude();
+                if (distance >= minimumDistance) {
+                    continue;
+                }
+
+                Point2D normal = distance == 0 ? new Point2D(1, 0) : delta.normalize();
+                double correction = (minimumDistance - distance) / 2d;
+                enemyPositions.put(
+                        firstEnemy,
+                        clampToBoard(firstPosition.subtract(normal.multiply(correction)), enemyCollisionRadius(firstEnemy))
+                );
+                enemyPositions.put(
+                        secondEnemy,
+                        clampToBoard(secondPosition.add(normal.multiply(correction)), enemyCollisionRadius(secondEnemy))
+                );
+                firstPosition = enemyPositions.get(firstEnemy);
+            }
+        }
+    }
+
+    private void resolvePlayerEnemyCollisions() {
+        for (Enemy enemy : currentGameState.getCurrentLevel().getEnemies()) {
+            if (!enemy.isAlive()) {
+                continue;
+            }
+
+            Point2D enemyPosition = enemyPositions.get(enemy);
+            if (enemyPosition == null) {
+                continue;
+            }
+
+            Point2D delta = playerPosition.subtract(enemyPosition);
+            double minimumDistance = PLAYER_COLLISION_RADIUS + enemyCollisionRadius(enemy) + ENTITY_COLLISION_PADDING;
+            double distance = delta.magnitude();
+            if (distance >= minimumDistance) {
+                continue;
+            }
+
+            Point2D normal = distance == 0 ? new Point2D(-1, 0) : delta.normalize();
+            playerPosition = clampToBoard(
+                    enemyPosition.add(normal.multiply(minimumDistance)),
+                    PLAYER_COLLISION_RADIUS
+            );
+        }
+    }
+
+    private void processInteractionRequest() {
+        if (!interactionRequested) {
+            return;
+        }
+
+        interactionRequested = false;
+
+        if (hasPendingCompletionDrop() && isPlayerNearInteractiveItem()) {
+            handleClaimDrop();
+            return;
+        }
+
+        if (canOpenDoor() && isPlayerNearDoor()) {
+            handleAdvanceDoor();
+        }
+    }
+
+    private void processAttackRequest() {
+        if (!attackRequested) {
+            return;
+        }
+
+        attackRequested = false;
+        if (attackCooldownRemaining > 0 || selectedEnemy == null || !selectedEnemy.isAlive()) {
+            return;
+        }
+
+        if (!isEnemyInAttackRange(selectedEnemy)) {
+            return;
+        }
+
+        try {
+            CombatTurnResult turnResult = gameService.attackCurrentLevelEnemy(selectedEnemy);
+            currentGameState = turnResult.getCurrentGameState();
+            attackCooldownRemaining = ATTACK_COOLDOWN_SECONDS;
+            refreshView();
+        } catch (RuntimeException exception) {
+            refreshView();
+        }
     }
 
     private void updateHud() {
@@ -309,6 +597,8 @@ public class GameViewController {
                         + "  DEF " + currentGameState.getPlayer().getDefense()
                         + "  SPD " + currentGameState.getPlayer().getSpeed()
         );
+        controlsHintLabel.setText(buildControlsHintText());
+        contextualHintLabel.setText(buildContextualHintText());
         playerElementHudLabel.setText(
                 currentGameState.getPlayer().getElementType() == null
                         ? "Elemento non scelto"
@@ -326,20 +616,16 @@ public class GameViewController {
                     "HP " + selectedEnemy.getHp()
                             + "  ATK " + selectedEnemy.getAttack()
                             + "  DEF " + selectedEnemy.getDefense()
+                            + (isEnemyInAttackRange(selectedEnemy) ? "  IN PORTATA" : "  FUORI PORTATA")
             );
         }
-
     }
 
-    private void renderBoard() {
-        gameBoardPane.getChildren().clear();
-        enemyNodes.clear();
-
-        renderBoardTiles();
-        renderDoorNode();
-        renderPlayerNode();
-        renderInteractiveItemNode();
-        renderEnemies();
+    private void renderDynamicScene() {
+        renderDoorNodeState();
+        renderItemNodeState();
+        renderPlayerNodeState();
+        renderEnemyNodeStates();
     }
 
     private void renderBoardTiles() {
@@ -378,108 +664,85 @@ public class GameViewController {
         return new BoardPalette(TILE_COLOR, TILE_ALT_COLOR, WALL_COLOR);
     }
 
-    private void renderDoorNode() {
-        StackPane doorNode = new StackPane();
-        doorNode.getStyleClass().add("board-door");
-        doorNode.getStyleClass().add(canOpenDoor() ? "board-door-open" : "board-door-locked");
-        doorNode.setPrefSize(104, 136);
-        doorNode.setLayoutX(DOOR_POSITION.getX());
-        doorNode.setLayoutY(DOOR_POSITION.getY());
-        doorNode.setOnMouseClicked(this::handleDoorClicked);
+    private StackPane buildDoorNode() {
+        StackPane builtDoorNode = new StackPane();
+        builtDoorNode.getStyleClass().add("board-door");
+        builtDoorNode.setPrefSize(DOOR_NODE_WIDTH, DOOR_NODE_HEIGHT);
+        builtDoorNode.setLayoutX(DOOR_POSITION.getX());
+        builtDoorNode.setLayoutY(DOOR_POSITION.getY());
+        builtDoorNode.setOnMouseClicked(this::handleDoorClicked);
 
-        Rectangle portal = new Rectangle(92, 124);
-        portal.setArcWidth(28);
-        portal.setArcHeight(28);
-        portal.setFill(canOpenDoor() ? DOOR_OPEN_COLOR : DOOR_LOCKED_COLOR);
-        portal.setOpacity(canOpenDoor() ? 0.95 : 0.78);
+        doorPortal = new Rectangle(92, 124);
+        doorPortal.setArcWidth(28);
+        doorPortal.setArcHeight(28);
 
-        Label label = new Label(canOpenDoor() ? "Porta" : "Sigillo");
-        label.getStyleClass().add("board-door-label");
+        doorNodeLabel = new Label("Porta");
+        doorNodeLabel.getStyleClass().add("board-door-label");
 
-        doorNode.getChildren().addAll(portal, label);
-        gameBoardPane.getChildren().add(doorNode);
+        builtDoorNode.getChildren().addAll(doorPortal, doorNodeLabel);
+        return builtDoorNode;
     }
 
-    private void renderPlayerNode() {
-        StackPane playerNode = new StackPane();
-        playerNode.getStyleClass().add("board-player");
-        playerNode.setPrefSize(116, 116);
-        playerNode.setLayoutX(PLAYER_POSITION.getX());
-        playerNode.setLayoutY(PLAYER_POSITION.getY() - 52);
+    private StackPane buildPlayerNode() {
+        StackPane builtPlayerNode = new StackPane();
+        builtPlayerNode.getStyleClass().add("board-player");
+        builtPlayerNode.setPrefSize(PLAYER_NODE_SIZE, PLAYER_NODE_SIZE);
 
         Circle outer = new Circle(42, PLAYER_COLOR);
         outer.setOpacity(0.28);
         Circle inner = new Circle(31, PLAYER_INNER_COLOR);
         inner.setStroke(PLAYER_COLOR);
         inner.setStrokeWidth(3);
+
         String playerName = currentGameState.getPlayer().getName();
         String playerInitial = (playerName == null || playerName.isBlank()) ? "?" : playerName.substring(0, 1).toUpperCase();
         Label label = new Label(playerInitial);
         label.getStyleClass().add("board-player-label");
 
-        playerNode.getChildren().addAll(outer, inner, label);
-        gameBoardPane.getChildren().add(playerNode);
+        builtPlayerNode.getChildren().addAll(outer, inner, label);
+        return builtPlayerNode;
     }
 
-    private void renderInteractiveItemNode() {
-        DemoLevel currentLevel = currentGameState.getCurrentLevel();
-        if (!currentLevel.isCompleted()) {
-            return;
-        }
+    private StackPane buildItemNode() {
+        StackPane builtItemNode = new StackPane();
+        builtItemNode.getStyleClass().add("board-item-node");
+        builtItemNode.setPrefSize(ITEM_NODE_SIZE, ITEM_NODE_SIZE);
+        builtItemNode.setLayoutX(ITEM_POSITION.getX());
+        builtItemNode.setLayoutY(ITEM_POSITION.getY());
+        builtItemNode.setVisible(false);
+        builtItemNode.setManaged(false);
 
-        String symbol;
-        Color color;
+        itemHalo = new Circle(38, DROP_COLOR);
+        itemHalo.setOpacity(0.24);
+        itemCore = new Circle(26, Color.web("#1b1623"));
+        itemCore.setStroke(DROP_COLOR);
+        itemCore.setStrokeWidth(3);
+        itemNodeLabel = new Label("+");
+        itemNodeLabel.getStyleClass().add("board-item-label");
 
-        if (hasPendingCompletionDrop()) {
-            symbol = "+";
-            color = DROP_COLOR;
-        } else if (hasPendingRewardChoice()) {
-            symbol = "R";
-            color = REWARD_COLOR;
-        } else {
-            return;
-        }
-
-        StackPane itemNode = new StackPane();
-        itemNode.getStyleClass().add("board-item-node");
-        itemNode.setPrefSize(102, 102);
-        itemNode.setLayoutX(ITEM_POSITION.getX());
-        itemNode.setLayoutY(ITEM_POSITION.getY());
-
-        Circle halo = new Circle(38, color);
-        halo.setOpacity(0.24);
-        Circle core = new Circle(26, Color.web("#1b1623"));
-        core.setStroke(color);
-        core.setStrokeWidth(3);
-        Label label = new Label(symbol);
-        label.getStyleClass().add("board-item-label");
-
-        itemNode.getChildren().addAll(halo, core, label);
-        gameBoardPane.getChildren().add(itemNode);
+        builtItemNode.getChildren().addAll(itemHalo, itemCore, itemNodeLabel);
+        return builtItemNode;
     }
 
-    private void renderEnemies() {
-        int livingEnemies = (int) currentGameState.getCurrentLevel().getEnemies().stream()
-                .filter(Enemy::isAlive)
-                .count();
+    private void rebuildEnemyVisuals() {
+        enemyVisuals.values().forEach(enemyVisual -> {
+            if (enemyVisual.rangeIndicator() != null) {
+                gameBoardPane.getChildren().remove(enemyVisual.rangeIndicator());
+            }
+            gameBoardPane.getChildren().remove(enemyVisual.node());
+        });
+        enemyVisuals.clear();
 
-        if (livingEnemies == 0) {
-            return;
-        }
-
-        int livingIndex = 0;
         for (Enemy enemy : currentGameState.getCurrentLevel().getEnemies()) {
             if (!enemy.isAlive()) {
                 continue;
             }
 
-            Point2D position = computeEnemyPosition(livingIndex, livingEnemies);
-            livingIndex++;
-
+            Circle rangeIndicator = null;
             if (enemy.getDetectionRange() > 0) {
-                Circle range = new Circle(position.getX(), position.getY() + 42, 38 + enemy.getDetectionRange() * 10d);
-                range.getStyleClass().add("enemy-range-indicator");
-                gameBoardPane.getChildren().add(range);
+                rangeIndicator = new Circle();
+                rangeIndicator.getStyleClass().add("enemy-range-indicator");
+                gameBoardPane.getChildren().add(rangeIndicator);
             }
 
             ImageView imageView = new ImageView(loadEnemySprite(enemy));
@@ -495,17 +758,89 @@ public class GameViewController {
 
             StackPane enemyNode = new StackPane(imageView, hpChip);
             enemyNode.getStyleClass().add("enemy-node");
-            if (enemy.equals(selectedEnemy)) {
-                enemyNode.getStyleClass().add("enemy-node-selected");
-            }
-            enemyNode.setLayoutX(position.getX() - width / 2);
-            enemyNode.setLayoutY(position.getY() - height / 2);
             enemyNode.setPrefSize(width, height);
             enemyNode.setOnMouseClicked(event -> handleEnemySelected(enemy));
 
-            enemyNodes.put(enemy, enemyNode);
             gameBoardPane.getChildren().add(enemyNode);
+            enemyVisuals.put(enemy, new EnemyVisual(enemyNode, hpChip, rangeIndicator, width, height));
         }
+    }
+
+    private void renderDoorNodeState() {
+        boolean doorOpen = canOpenDoor();
+
+        doorNode.getStyleClass().removeAll("board-door-open", "board-door-locked");
+        doorNode.getStyleClass().add(doorOpen ? "board-door-open" : "board-door-locked");
+        doorPortal.setFill(doorOpen ? DOOR_OPEN_COLOR : DOOR_LOCKED_COLOR);
+        doorPortal.setOpacity(doorOpen ? 0.95 : 0.78);
+        doorNodeLabel.setText(doorOpen ? "Porta" : "Sigillo");
+    }
+
+    private void renderItemNodeState() {
+        if (!currentGameState.getCurrentLevel().isCompleted()) {
+            itemNode.setVisible(false);
+            itemNode.setManaged(false);
+            return;
+        }
+
+        String symbol;
+        Color color;
+
+        if (hasPendingCompletionDrop()) {
+            symbol = "+";
+            color = DROP_COLOR;
+        } else if (hasPendingRewardChoice()) {
+            symbol = "R";
+            color = REWARD_COLOR;
+        } else {
+            itemNode.setVisible(false);
+            itemNode.setManaged(false);
+            return;
+        }
+
+        itemNode.setVisible(true);
+        itemNode.setManaged(true);
+        itemHalo.setFill(color);
+        itemCore.setStroke(color);
+        itemNodeLabel.setText(symbol);
+    }
+
+    private void renderPlayerNodeState() {
+        playerNode.setLayoutX(playerPosition.getX() - (PLAYER_NODE_SIZE / 2));
+        playerNode.setLayoutY(playerPosition.getY() - (PLAYER_NODE_SIZE / 2));
+        playerNode.toFront();
+    }
+
+    private void renderEnemyNodeStates() {
+        if (enemyVisuals.size() != currentGameState.getCurrentLevel().getEnemies().stream().filter(Enemy::isAlive).count()) {
+            rebuildEnemyVisuals();
+        }
+
+        for (Enemy enemy : currentGameState.getCurrentLevel().getEnemies()) {
+            EnemyVisual enemyVisual = enemyVisuals.get(enemy);
+            Point2D enemyPosition = enemyPositions.get(enemy);
+            if (enemyVisual == null || enemyPosition == null || !enemy.isAlive()) {
+                continue;
+            }
+
+            if (enemyVisual.rangeIndicator() != null) {
+                enemyVisual.rangeIndicator().setCenterX(enemyPosition.getX());
+                enemyVisual.rangeIndicator().setCenterY(enemyPosition.getY() + 42);
+                enemyVisual.rangeIndicator().setRadius(38 + enemy.getDetectionRange() * 10d);
+            }
+
+            enemyVisual.hpChip().setText("HP " + enemy.getHp());
+            enemyVisual.node().setLayoutX(enemyPosition.getX() - enemyVisual.width() / 2);
+            enemyVisual.node().setLayoutY(enemyPosition.getY() - enemyVisual.height() / 2);
+            enemyVisual.node().getStyleClass().remove("enemy-node-selected");
+            if (enemy.equals(selectedEnemy)) {
+                enemyVisual.node().getStyleClass().add("enemy-node-selected");
+            }
+        }
+
+        doorNode.toFront();
+        itemNode.toFront();
+        playerNode.toFront();
     }
 
     private void renderInventoryOverlay() {
@@ -547,44 +882,6 @@ public class GameViewController {
         return entry;
     }
 
-    private void renderRewardActions() {
-        rewardActionPane.getChildren().clear();
-        if (!hasPendingRewardChoice()) {
-            return;
-        }
-
-        currentGameState.getCurrentLevel().getRewardChoices().forEach((choice, reward) -> {
-            Button button = new Button(choice.getLabel());
-            button.getStyleClass().addAll("menu-button", "secondary-button", "contextual-action-button");
-            button.setOnAction(event -> handleChooseReward(choice, reward.getName()));
-            rewardActionPane.getChildren().add(button);
-        });
-    }
-
-    private void renderElementActions() {
-        elementActionPane.getChildren().clear();
-        if (!needsElementChoice()) {
-            return;
-        }
-
-        for (ElementType elementType : ElementType.values()) {
-            Button button = new Button(elementType.name());
-            button.getStyleClass().addAll("menu-button", "secondary-button", "contextual-action-button");
-            button.setOnAction(event -> handleChooseElement(elementType));
-            elementActionPane.getChildren().add(button);
-        }
-    }
-
-    private void updateActionButtons() {
-        boolean levelCompleted = currentGameState.getCurrentLevel().isCompleted();
-        boolean playerAlive = currentGameState.getPlayer().isAlive();
-
-        attackButton.setDisable(selectedEnemy == null || levelCompleted || !playerAlive);
-        usePotionButton.setDisable(findFirstPotion().isEmpty() || !playerAlive);
-        claimDropButton.setDisable(!hasPendingCompletionDrop() || !playerAlive);
-        advanceDoorButton.setDisable(!canOpenDoor());
-    }
-
     private void ensureSelectedEnemy() {
         if (selectedEnemy != null && selectedEnemy.isAlive() && currentGameState.getCurrentLevel().getEnemies().contains(selectedEnemy)) {
             return;
@@ -596,28 +893,59 @@ public class GameViewController {
                 .orElse(null);
     }
 
+    private void synchronizeEnemyPositionsWithCurrentLevel() {
+        Map<Enemy, Point2D> synchronizedPositions = new LinkedHashMap<>();
+        List<Enemy> aliveEnemies = currentGameState.getCurrentLevel().getEnemies().stream()
+                .filter(Enemy::isAlive)
+                .toList();
+
+        for (int index = 0; index < aliveEnemies.size(); index++) {
+            Enemy enemy = aliveEnemies.get(index);
+            synchronizedPositions.put(
+                    enemy,
+                    enemyPositions.getOrDefault(enemy, computeEnemyPosition(index, aliveEnemies.size()))
+            );
+        }
+
+        enemyPositions.clear();
+        enemyPositions.putAll(synchronizedPositions);
+        rebuildEnemyVisuals();
+    }
+
+    private void seedEnemyPositions() {
+        enemyPositions.clear();
+        List<Enemy> aliveEnemies = currentGameState.getCurrentLevel().getEnemies().stream()
+                .filter(Enemy::isAlive)
+                .toList();
+
+        for (int index = 0; index < aliveEnemies.size(); index++) {
+            enemyPositions.put(aliveEnemies.get(index), computeEnemyPosition(index, aliveEnemies.size()));
+        }
+    }
+
     private void handleEnemySelected(Enemy enemy) {
         selectedEnemy = enemy;
-        refreshView();
+        updateHud();
+        renderDynamicScene();
     }
 
     private void handleDoorClicked(MouseEvent event) {
         event.consume();
-        handleAdvanceDoor();
+        interactionRequested = true;
     }
 
     private void handleChooseElement(ElementType elementType) {
         try {
-            currentGameState = gameService.attuneCurrentPlayerToOriginStone(elementType);
+            gameService.attuneCurrentPlayerToOriginStone(elementType);
             refreshView();
         } catch (RuntimeException exception) {
             refreshView();
         }
     }
 
-    private void handleChooseReward(LevelRewardChoice rewardChoice, String rewardName) {
+    private void handleChooseReward(LevelRewardChoice rewardChoice) {
         try {
-            currentGameState = gameService.chooseCurrentLevelReward(rewardChoice);
+            gameService.chooseCurrentLevelReward(rewardChoice);
             refreshView();
         } catch (RuntimeException exception) {
             refreshView();
@@ -628,22 +956,19 @@ public class GameViewController {
         try {
             if (item instanceof Potion) {
                 CombatResult result = gameService.useItem(item);
-                currentGameState = gameService.getCurrentGameState();
                 inventoryOverlayFeedbackLabel.setText(result.getMessage());
             } else if (item instanceof Weapon || item instanceof Armor) {
                 CombatResult result = gameService.useItem(item);
                 currentGameState = gameService.getCurrentGameState();
                 currentGameState.getPlayer().removeItem(item);
-                String message = result.getMessage() + ". Equipaggiato.";
-                inventoryOverlayFeedbackLabel.setText(message);
+                inventoryOverlayFeedbackLabel.setText(result.getMessage() + ". Equipaggiato.");
             } else {
                 inventoryOverlayFeedbackLabel.setText(item.getName() + " non e usabile da questo menu.");
             }
 
             refreshView();
         } catch (RuntimeException exception) {
-            String message = "Uso inventario fallito: " + exception.getMessage();
-            inventoryOverlayFeedbackLabel.setText(message);
+            inventoryOverlayFeedbackLabel.setText("Uso inventario fallito: " + exception.getMessage());
         }
     }
 
@@ -705,11 +1030,13 @@ public class GameViewController {
         }
 
         if (currentGameState.getCurrentLevel().getRemainingEnemies() > 0) {
-            return "Elimina i nemici rimasti e mantieni il controllo dell'arena.";
+            return "Muoviti nell'arena, evita i nemici e attacca quando il bersaglio e in portata.";
         }
 
         if (hasPendingCompletionDrop()) {
-            return "Raccogli l'oggetto del livello prima di avanzare.";
+            return isPlayerNearInteractiveItem()
+                    ? "Raccogli l'oggetto del livello."
+                    : "Raggiungi l'oggetto del livello per raccoglierlo.";
         }
 
         if (needsElementChoice()) {
@@ -720,9 +1047,175 @@ public class GameViewController {
             return "Scegli una ricompensa prima di aprire la porta.";
         }
 
-        return currentGameState.isDemoCompleted()
-                ? "La porta finale e aperta: la demo e completa."
-                : "La porta e aperta. Attraversala per raggiungere il prossimo livello.";
+        if (currentGameState.isDemoCompleted()) {
+            return "La porta finale e aperta: la demo e completa.";
+        }
+
+        return isPlayerNearDoor()
+                ? "La porta e aperta. Attraversala per raggiungere il prossimo livello."
+                : "La porta e aperta: raggiungila per accedere al prossimo livello.";
+    }
+
+    private String buildControlsHintText() {
+        return String.join(
+                System.lineSeparator(),
+                "WASD / Frecce: Muovi",
+                "Space / Invio: Attacca",
+                "E: Interagisci",
+                "M: Inventario"
+        );
+    }
+
+    private String buildContextualHintText() {
+        if (needsElementChoice()) {
+            return "1-4: Scegli elemento  |  1 Fuoco, 2 Acqua, 3 Vento, 4 Terra";
+        }
+
+        if (hasPendingRewardChoice()) {
+            StringJoiner stringJoiner = new StringJoiner(
+                    "  |  ",
+                    "1-" + currentGameState.getCurrentLevel().getRewardChoices().size() + ": Ricompensa  |  ",
+                    ""
+            );
+            int optionIndex = 1;
+            for (LevelRewardChoice rewardChoice : currentGameState.getCurrentLevel().getRewardChoices().keySet()) {
+                stringJoiner.add(optionIndex + " " + rewardChoice.getLabel());
+                optionIndex++;
+            }
+            return stringJoiner.toString();
+        }
+
+        if (selectedEnemy != null && !isEnemyInAttackRange(selectedEnemy)) {
+            return "Avvicinati al bersaglio prima di attaccare.";
+        }
+
+        if (hasPendingCompletionDrop() && !isPlayerNearInteractiveItem()) {
+            return "Raggiungi l'oggetto e premi E per raccoglierlo.";
+        }
+
+        if (canOpenDoor() && !isPlayerNearDoor()) {
+            return "Raggiungi la porta e premi E per attraversarla.";
+        }
+
+        return "";
+    }
+
+    private Point2D resolveMovementDirection() {
+        double horizontal = 0;
+        double vertical = 0;
+
+        if (pressedKeys.contains(KeyCode.A) || pressedKeys.contains(KeyCode.LEFT)) {
+            horizontal -= 1;
+        }
+        if (pressedKeys.contains(KeyCode.D) || pressedKeys.contains(KeyCode.RIGHT)) {
+            horizontal += 1;
+        }
+        if (pressedKeys.contains(KeyCode.W) || pressedKeys.contains(KeyCode.UP)) {
+            vertical -= 1;
+        }
+        if (pressedKeys.contains(KeyCode.S) || pressedKeys.contains(KeyCode.DOWN)) {
+            vertical += 1;
+        }
+
+        return new Point2D(horizontal, vertical);
+    }
+
+    private boolean isMovementKey(KeyCode keyCode) {
+        return keyCode == KeyCode.W
+                || keyCode == KeyCode.A
+                || keyCode == KeyCode.S
+                || keyCode == KeyCode.D
+                || keyCode == KeyCode.UP
+                || keyCode == KeyCode.DOWN
+                || keyCode == KeyCode.LEFT
+                || keyCode == KeyCode.RIGHT;
+    }
+
+    private boolean handleContextualSelectionKey(KeyCode keyCode) {
+        int selectionIndex = resolveSelectionIndex(keyCode);
+        if (selectionIndex < 0) {
+            return false;
+        }
+
+        if (needsElementChoice()) {
+            ElementType[] elementTypes = ElementType.values();
+            if (selectionIndex >= elementTypes.length) {
+                return true;
+            }
+            handleChooseElement(elementTypes[selectionIndex]);
+            return true;
+        }
+
+        if (hasPendingRewardChoice()) {
+            List<LevelRewardChoice> rewardChoices = currentGameState.getCurrentLevel().getRewardChoices()
+                    .keySet()
+                    .stream()
+                    .toList();
+            if (selectionIndex >= rewardChoices.size()) {
+                return true;
+            }
+            handleChooseReward(rewardChoices.get(selectionIndex));
+            return true;
+        }
+
+        return false;
+    }
+
+    private int resolveSelectionIndex(KeyCode keyCode) {
+        return switch (keyCode) {
+            case DIGIT1, NUMPAD1 -> 0;
+            case DIGIT2, NUMPAD2 -> 1;
+            case DIGIT3, NUMPAD3 -> 2;
+            case DIGIT4, NUMPAD4 -> 3;
+            default -> -1;
+        };
+    }
+
+    private Point2D clampToBoard(Point2D point, double radius) {
+        double clampedX = Math.max(radius, Math.min(BOARD_WIDTH - radius, point.getX()));
+        double clampedY = Math.max(radius, Math.min(BOARD_HEIGHT - radius, point.getY()));
+        return new Point2D(clampedX, clampedY);
+    }
+
+    private boolean isPlayerNearInteractiveItem() {
+        return playerPosition.distance(getInteractiveItemCenter()) <= INTERACTION_RANGE;
+    }
+
+    private boolean isPlayerNearDoor() {
+        return playerPosition.distance(getDoorCenter()) <= INTERACTION_RANGE;
+    }
+
+    private boolean isEnemyInAttackRange(Enemy enemy) {
+        Point2D enemyPosition = enemyPositions.get(enemy);
+        if (enemyPosition == null) {
+            return false;
+        }
+
+        return playerPosition.distance(enemyPosition) <= MELEE_ATTACK_RANGE;
+    }
+
+    private double enemyCollisionRadius(Enemy enemy) {
+        if (enemy instanceof BossEnemy) {
+            return 72;
+        }
+        if (enemy instanceof Slime) {
+            return 44;
+        }
+        return 52;
+    }
+
+    private Point2D getInteractiveItemCenter() {
+        return new Point2D(
+                ITEM_POSITION.getX() + (ITEM_NODE_SIZE / 2),
+                ITEM_POSITION.getY() + (ITEM_NODE_SIZE / 2)
+        );
+    }
+
+    private Point2D getDoorCenter() {
+        return new Point2D(
+                DOOR_POSITION.getX() + (DOOR_NODE_WIDTH / 2),
+                DOOR_POSITION.getY() + (DOOR_NODE_HEIGHT / 2)
+        );
     }
 
     private Point2D computeEnemyPosition(int index, int totalLivingEnemies) {
@@ -736,6 +1229,12 @@ public class GameViewController {
     }
 
     private Image loadEnemySprite(Enemy enemy) {
+        Class<? extends Enemy> enemyType = enemy.getClass();
+        Image cachedImage = enemySpriteCache.get(enemyType);
+        if (cachedImage != null) {
+            return cachedImage;
+        }
+
         String spritePath;
         if (enemy instanceof Goblin) {
             spritePath = "/images/enemies/goblin.png";
@@ -754,9 +1253,20 @@ public class GameViewController {
             throw new IllegalStateException("Sprite resource not found: " + spritePath);
         }
 
-        return new Image(stream);
+        Image enemySprite = new Image(stream);
+        enemySpriteCache.put(enemyType, enemySprite);
+        return enemySprite;
     }
 
     private record BoardPalette(Color primaryTileColor, Color secondaryTileColor, Color borderColor) {
+    }
+
+    private record EnemyVisual(
+            StackPane node,
+            Label hpChip,
+            Circle rangeIndicator,
+            double width,
+            double height
+    ) {
     }
 }
