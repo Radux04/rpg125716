@@ -87,6 +87,7 @@ public class GameViewController {
     private static final double WIND_TORNADO_TICK_SECONDS = 2;
     private static final double HEART_PULSE_DURATION_SECONDS = 1.4;
     private static final double WATER_KNOCKBACK_DISTANCE = 180;
+    private static final int FIREBALL_BONUS_DAMAGE = 4;
     private static final int STONE_POWER_HIT_CHARGE_TARGET = 5;
     private static final int STONE_POWER_HIT_TAKEN_CHARGE_TARGET = 3;
     private static final double MAX_FRAME_DELTA_SECONDS = 0.05;
@@ -1685,7 +1686,7 @@ public class GameViewController {
             Point2D direction = targetPosition.subtract(projectile.position());
             double distance = direction.magnitude();
             if (distance <= projectile.speed() * deltaSeconds) {
-                resolveAttackOnEnemy(targetEnemy, false, true, false);
+                resolveAttackOnEnemy(targetEnemy, false, true, false, FIREBALL_BONUS_DAMAGE);
                 continue;
             }
 
@@ -1703,9 +1704,21 @@ public class GameViewController {
             boolean countsTowardStoneCharge,
             boolean applyWaterKnockback
     ) {
+        resolveAttackOnEnemy(enemy, enemyCanCounterAttack, countsTowardStoneCharge, applyWaterKnockback, 0);
+    }
+
+    private void resolveAttackOnEnemy(
+            Enemy enemy,
+            boolean enemyCanCounterAttack,
+            boolean countsTowardStoneCharge,
+            boolean applyWaterKnockback,
+            int bonusDamage
+    ) {
         try {
             CombatTurnResult turnResult = enemyCanCounterAttack
                     ? gameService.attackCurrentLevelEnemy(enemy)
+                    : bonusDamage > 0
+                    ? gameService.attackCurrentLevelEnemyWithBonusDamageWithoutCounterAttack(enemy, bonusDamage)
                     : gameService.attackCurrentLevelEnemyWithoutCounterAttack(enemy);
             applyCombatTurnResult(enemy, turnResult, countsTowardStoneCharge, applyWaterKnockback);
         } catch (RuntimeException exception) {

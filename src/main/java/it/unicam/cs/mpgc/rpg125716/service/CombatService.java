@@ -37,7 +37,11 @@ public class CombatService {
     }
 
     public CombatResult playerAttack(Player player, Enemy enemy) {
-        return attack(player, enemy);
+        return attack(player, enemy, 0);
+    }
+
+    public CombatResult playerAttack(Player player, Enemy enemy, int bonusDamage) {
+        return attack(player, enemy, bonusDamage);
     }
 
     public CombatResult enemyAttack(Enemy enemy, Player player) {
@@ -45,7 +49,11 @@ public class CombatService {
     }
 
     public CombatResult attack(Player player, Enemy enemy) {
-        int damage = calculateDamage(player.getAttack(), enemy.getDefense());
+        return attack(player, enemy, 0);
+    }
+
+    public CombatResult attack(Player player, Enemy enemy, int bonusDamage) {
+        int damage = calculateDamage(player.getAttack() + Math.max(0, bonusDamage), enemy.getDefense());
         enemy.setHp(Math.max(0, enemy.getHp() - damage));
 
         if (enemy.getHp() == 0) {
