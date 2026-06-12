@@ -68,6 +68,19 @@
                                 <Label fx:id="playerStatsHudLabel" styleClass="body-label" text="ATK 10  DEF 5  SPD 8" wrapText="true" />
                                 <Label fx:id="playerElementHudLabel" styleClass="muted-label" text="Elemento non scelto" wrapText="true" />
                                 <Label styleClass="muted-label" text="M-Inventario" wrapText="true" />
+                                <VBox maxWidth="394.0" spacing="2.0">
+                                    <children>
+                                        <Label styleClass="muted-label" text="WASD / Frecce - Muovi" wrapText="true" />
+                                        <Label styleClass="muted-label" text="Space / Invio - Attacca" wrapText="true" />
+                                        <Label styleClass="muted-label" text="E - Interagisci" wrapText="true" />
+                                        <Label styleClass="muted-label" text="M - Inventario" wrapText="true" />
+                                    </children>
+                                </VBox>
+                                <Label fx:id="contextualHintLabel"
+                                       maxWidth="394.0"
+                                       styleClass="muted-label"
+                                       text=""
+                                       wrapText="true" />
                             </children>
                         </VBox>
                     </left>
@@ -132,86 +145,15 @@
             </top>
 
             <center>
-                <StackPane prefHeight="664.0" prefWidth="1788.0" styleClass="game-board-frame">
+                <StackPane prefHeight="584.0" prefWidth="1668.0" styleClass="game-board-frame">
                     <padding>
                         <Insets bottom="18.0" left="18.0" right="18.0" top="18.0" />
                     </padding>
                     <children>
-                        <Pane fx:id="gameBoardPane" prefHeight="620.0" prefWidth="1720.0" styleClass="game-board" />
+                        <Pane fx:id="gameBoardPane" prefHeight="540.0" prefWidth="1600.0" styleClass="game-board" />
                     </children>
                 </StackPane>
             </center>
-
-            <bottom>
-                <VBox spacing="8.0">
-                    <children>
-                        <VBox spacing="6.0">
-                            <children>
-                                <VBox prefWidth="1440.0" spacing="6.0">
-                                    <styleClass>
-                                        <String fx:value="hud-card" />
-                                        <String fx:value="bottom-panel-card" />
-                                        <String fx:value="action-bar-card" />
-                                    </styleClass>
-                                    <children>
-                                        <Label styleClass="card-title" text="Azioni" />
-                                        <FlowPane hgap="10.0" vgap="8.0">
-                                            <children>
-                                                <Button fx:id="attackButton"
-                                                        mnemonicParsing="false"
-                                                        onAction="#handleAttackSelectedEnemy"
-                                                        text="Attacca Bersaglio">
-                                                    <styleClass>
-                                                        <String fx:value="menu-button" />
-                                                        <String fx:value="primary-button" />
-                                                        <String fx:value="contextual-action-button" />
-                                                    </styleClass>
-                                                </Button>
-                                                <Button fx:id="usePotionButton"
-                                                        mnemonicParsing="false"
-                                                        onAction="#handleUsePotion"
-                                                        text="Usa Pozione">
-                                                    <styleClass>
-                                                        <String fx:value="menu-button" />
-                                                        <String fx:value="secondary-button" />
-                                                        <String fx:value="contextual-action-button" />
-                                                    </styleClass>
-                                                </Button>
-                                                <Button fx:id="claimDropButton"
-                                                        mnemonicParsing="false"
-                                                        onAction="#handleClaimDrop"
-                                                        text="Raccogli Oggetto">
-                                                    <styleClass>
-                                                        <String fx:value="menu-button" />
-                                                        <String fx:value="secondary-button" />
-                                                        <String fx:value="contextual-action-button" />
-                                                    </styleClass>
-                                                </Button>
-                                                <Button fx:id="advanceDoorButton"
-                                                        mnemonicParsing="false"
-                                                        onAction="#handleAdvanceDoor"
-                                                        text="Attraversa la Porta">
-                                                    <styleClass>
-                                                        <String fx:value="menu-button" />
-                                                        <String fx:value="primary-button" />
-                                                        <String fx:value="contextual-action-button" />
-                                                    </styleClass>
-                                                </Button>
-                                            </children>
-                                        </FlowPane>
-                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
-                                            <children>
-                                                <FlowPane fx:id="elementActionPane" hgap="8.0" vgap="8.0" />
-                                                <FlowPane fx:id="rewardActionPane" hgap="8.0" vgap="8.0" />
-                                            </children>
-                                        </HBox>
-                                    </children>
-                                </VBox>
-                            </children>
-                        </VBox>
-                    </children>
-                </VBox>
-            </bottom>
         </BorderPane>
         <StackPane fx:id="inventoryOverlay" managed="false" visible="false">
             <children>
