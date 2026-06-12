@@ -75,7 +75,7 @@ class GameServiceTest {
         CurrentGameState advancedState = gameService.completeCurrentLevel();
 
         assertEquals(2, advancedState.getCurrentLevel().getNumber());
-        assertTrue(advancedState.getCompletedLevels().contains("Livello 1 - Tutorial"));
+        assertTrue(advancedState.getCompletedLevels().contains("Livello 1 - Esterno della fortezza"));
         assertFalse(advancedState.isCurrentLevelStarted());
         assertEquals(levelBeforeAdvance + 1, advancedState.getPlayer().getLevel());
         assertEquals(maxHpBeforeAdvance + 10, advancedState.getPlayer().getMaxHp());
@@ -128,7 +128,7 @@ class GameServiceTest {
         CurrentGameState advancedState = gameService.completeCurrentLevel();
 
         assertEquals(3, advancedState.getCurrentLevel().getNumber());
-        assertTrue(advancedState.getCompletedLevels().contains("Livello 2 - Inseguimento"));
+        assertTrue(advancedState.getCompletedLevels().contains("Livello 2 - Sale del Forgotten Gate"));
         assertTrue(advancedState.getPlayer().getInventory().containsItem(new Potion("Pozione curativa", "Permette al player di recuperare punti vita.", 25)));
         assertEquals(levelBeforeAdvance + 1, advancedState.getPlayer().getLevel());
         assertEquals(maxHpBeforeAdvance + 10, advancedState.getPlayer().getMaxHp());

@@ -58,8 +58,8 @@ class GameControllerTest {
 
         assertEquals(2, savedState.getSlotId());
         assertEquals(SaveSlot.SLOT_2, gameController.requireCurrentSession().getSaveSlot());
-        assertTrue(savedState.getCompletedLevels().contains("Livello 1 - Tutorial"));
-        assertTrue(savedState.getCompletedLevels().contains("Livello 2 - Inseguimento"));
+        assertTrue(savedState.getCompletedLevels().contains("Livello 1 - Esterno della fortezza"));
+        assertTrue(savedState.getCompletedLevels().contains("Livello 2 - Sale del Forgotten Gate"));
         assertTrue(gameController.loadGame(SaveSlot.SLOT_2).isPresent());
         assertTrue(gameController.requireCurrentSession().getPlayer().getInventory().containsItem(new Potion()));
         assertTrue(gameController.requireCurrentSession().getCampaign().getCurrentLevel().isCompleted());
@@ -129,7 +129,7 @@ class GameControllerTest {
         campaign.getCurrentLevel().getEnemies().forEach(enemy -> enemy.setHp(0));
 
         saveService.saveGame(
-                GameStateLog.fromCurrentGame(1, new Player("Hero", 60, 10, 5, 8), campaign, List.of("Livello 1 - Tutorial")),
+                GameStateLog.fromCurrentGame(1, new Player("Hero", 60, 10, 5, 8), campaign, List.of("Livello 1 - Esterno della fortezza")),
                 SaveSlot.SLOT_1
         );
 

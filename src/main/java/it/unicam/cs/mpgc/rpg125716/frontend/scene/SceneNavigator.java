@@ -6,10 +6,19 @@ import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.LoadSlotsController;
 import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.MainMenuController;
 import it.unicam.cs.mpgc.rpg125716.service.CurrentGameState;
 import it.unicam.cs.mpgc.rpg125716.service.GameService;
+import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
+import javafx.animation.ParallelTransition;
+import javafx.animation.SequentialTransition;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import java.io.IOException;
 import java.net.URL;
@@ -49,6 +58,11 @@ public class SceneNavigator {
 
     public void showGameOverview(CurrentGameState currentGameState, String feedbackMessage) {
         show(GAME_OVERVIEW_FXML, currentGameState, feedbackMessage);
+    }
+
+    public void showLevelTransitionToGameOverview(CurrentGameState currentGameState, String feedbackMessage) {
+        Parent root = loadRoot(GAME_OVERVIEW_FXML, currentGameState, feedbackMessage);
+        showWithLevelTransition(root, currentGameState.getCurrentLevel().getName());
     }
 
     public void showGameView(CurrentGameState currentGameState) {
@@ -117,6 +131,71 @@ public class SceneNavigator {
         Scene scene = new Scene(root, sceneWidth, sceneHeight);
         scene.getStylesheets().add(stylesheet);
         stage.setScene(scene);
+    }
+
+    private void showWithLevelTransition(Parent root, String levelTitle) {
+        StackPane sceneRoot = new StackPane(root);
+        StackPane transitionOverlay = buildLevelTransitionOverlay(levelTitle);
+        sceneRoot.getChildren().add(transitionOverlay);
+
+        Scene scene = new Scene(sceneRoot, sceneWidth, sceneHeight);
+        scene.getStylesheets().add(stylesheet);
+        stage.setScene(scene);
+
+        playLevelTransition(transitionOverlay);
+    }
+
+    private StackPane buildLevelTransitionOverlay(String levelTitle) {
+        Label eyebrowLabel = new Label("Nuovo Livello");
+        eyebrowLabel.getStyleClass().add("level-transition-eyebrow");
+
+        Label titleLabel = new Label(levelTitle);
+        titleLabel.getStyleClass().add("level-transition-title");
+        titleLabel.setWrapText(true);
+        titleLabel.setMaxWidth(900);
+
+        VBox content = new VBox(14, eyebrowLabel, titleLabel);
+        content.setAlignment(Pos.CENTER);
+        content.setOpacity(0);
+
+        StackPane overlay = new StackPane(content);
+        overlay.getStyleClass().add("level-transition-overlay");
+        overlay.setOpacity(1);
+        overlay.setPickOnBounds(true);
+        overlay.setUserData(content);
+        return overlay;
+    }
+
+    private void playLevelTransition(StackPane transitionOverlay) {
+        VBox content = (VBox) transitionOverlay.getUserData();
+
+        FadeTransition contentFadeIn = new FadeTransition(Duration.millis(220), content);
+        contentFadeIn.setFromValue(0);
+        contentFadeIn.setToValue(1);
+
+        PauseTransition holdBlackScreen = new PauseTransition(Duration.millis(280));
+
+        FadeTransition contentFadeOut = new FadeTransition(Duration.millis(220), content);
+        contentFadeOut.setFromValue(1);
+        contentFadeOut.setToValue(0);
+
+        FadeTransition overlayFadeOut = new FadeTransition(Duration.millis(420), transitionOverlay);
+        overlayFadeOut.setFromValue(1);
+        overlayFadeOut.setToValue(0);
+
+        ParallelTransition fadeOut = new ParallelTransition(contentFadeOut, overlayFadeOut);
+
+        SequentialTransition transition = new SequentialTransition(
+                contentFadeIn,
+                holdBlackScreen,
+                fadeOut
+        );
+        transition.setOnFinished(event -> {
+            if (transitionOverlay.getParent() instanceof StackPane parent) {
+                parent.getChildren().remove(transitionOverlay);
+            }
+        });
+        transition.play();
     }
 
     private String resolveStylesheet() {

@@ -237,7 +237,11 @@ public class GameViewController {
                     ? "Hai completato la demo e sconfitto il boss finale."
                     : "Hai attraversato la porta. Il prossimo livello e pronto.";
             stopGameLoop();
-            sceneNavigator.showGameOverview(nextState, message);
+            if (nextState.isDemoCompleted()) {
+                sceneNavigator.showGameOverview(nextState, message);
+            } else {
+                sceneNavigator.showLevelTransitionToGameOverview(nextState, message);
+            }
         } catch (RuntimeException exception) {
             refreshView();
         }
