@@ -112,6 +112,220 @@
     -fx-min-width: 132px;
 }
 
+.game-view-root .blurred-background {
+    -fx-effect: none;
+}
+
+.game-header-bar {
+    -fx-padding: 0 0 14 0;
+}
+
+.game-level-center {
+    -fx-padding: 10 28 0 28;
+}
+
+.game-board-frame,
+.hud-panel,
+.hud-card {
+    -fx-background-color: rgba(21, 18, 29, 0.92);
+    -fx-background-radius: 24;
+    -fx-border-color: rgba(175, 168, 186, 0.20);
+    -fx-border-radius: 24;
+    -fx-border-width: 1;
+}
+
+.game-board-frame {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.34), 32, 0.16, 0, 18);
+}
+
+.game-board {
+    -fx-background-color: linear-gradient(to bottom, rgba(31, 24, 40, 0.96) 0%, rgba(22, 18, 29, 0.98) 100%);
+    -fx-background-radius: 20;
+}
+
+.game-top-card {
+    -fx-padding: 16 18 16 18;
+}
+
+.hud-panel {
+    -fx-padding: 18 18 18 18;
+}
+
+.hud-card {
+    -fx-padding: 16 18 16 18;
+}
+
+.hud-main-value {
+    -fx-text-fill: #f1edf8;
+    -fx-font-size: 24px;
+    -fx-font-weight: 700;
+}
+
+.hud-highlight-value {
+    -fx-text-fill: #d4af37;
+    -fx-font-size: 22px;
+    -fx-font-weight: 700;
+}
+
+.battle-log-area {
+    -fx-background-color: rgba(13, 11, 16, 0.94);
+    -fx-background-insets: 0;
+    -fx-background-radius: 18;
+    -fx-border-color: rgba(107, 63, 160, 0.28);
+    -fx-border-radius: 18;
+    -fx-border-width: 1;
+    -fx-font-size: 14px;
+    -fx-text-fill: #efe8fb;
+    -fx-highlight-fill: rgba(107, 63, 160, 0.42);
+}
+
+.battle-log-area .content {
+    -fx-background-color: rgba(13, 11, 16, 0.94);
+    -fx-background-radius: 18;
+}
+
+.action-bar-card {
+    -fx-padding: 12 14 12 14;
+}
+
+.bottom-panel-row {
+    -fx-padding: 0;
+}
+
+.bottom-panel-card {
+    -fx-padding: 10 12 10 12;
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+}
+
+.bottom-panel-card .card-title {
+    -fx-font-size: 17px;
+}
+
+.bottom-panel-card .body-label,
+.bottom-panel-card .feedback-label {
+    -fx-font-size: 13px;
+}
+
+.bottom-panel-card .info-chip {
+    -fx-padding: 6 10 6 10;
+    -fx-font-size: 12px;
+}
+
+.contextual-action-button {
+    -fx-min-width: 146px;
+    -fx-padding: 12 18 12 18;
+}
+
+.status-chip {
+    -fx-background-color: rgba(35, 28, 47, 0.94);
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(175, 168, 186, 0.18);
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+    -fx-padding: 9 14 9 14;
+    -fx-text-fill: #f1edf8;
+    -fx-font-family: "Space Grotesk", "Segoe UI Semibold", sans-serif;
+    -fx-font-size: 13px;
+    -fx-font-weight: 700;
+}
+
+.status-chip-gold {
+    -fx-background-color: rgba(212, 175, 55, 0.18);
+    -fx-border-color: rgba(255, 244, 210, 0.26);
+    -fx-text-fill: #f6d86a;
+}
+
+.centered-copy {
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+}
+
+.compact-main-value {
+    -fx-font-size: 18px;
+}
+
+.inventory-overlay-backdrop {
+    -fx-background-color: rgba(13, 11, 16, 0.72);
+}
+
+.inventory-overlay-card,
+.inventory-entry-card {
+    -fx-background-color: rgba(21, 18, 29, 0.97);
+    -fx-background-radius: 24;
+    -fx-border-color: rgba(175, 168, 186, 0.20);
+    -fx-border-radius: 24;
+    -fx-border-width: 1;
+}
+
+.inventory-overlay-card {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.40), 42, 0.18, 0, 18);
+}
+
+.inventory-entry-card {
+    -fx-padding: 14 16 14 16;
+    -fx-alignment: center-left;
+    -fx-spacing: 18;
+}
+
+.info-chip,
+.entity-chip,
+.board-door-label,
+.board-player-label,
+.board-item-label {
+    -fx-font-family: "Space Grotesk", "Segoe UI Semibold", sans-serif;
+    -fx-font-weight: 700;
+}
+
+.info-chip {
+    -fx-background-color: rgba(35, 28, 47, 0.94);
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(175, 168, 186, 0.18);
+    -fx-border-radius: 999;
+    -fx-padding: 9 14 9 14;
+    -fx-text-fill: #f1edf8;
+    -fx-font-size: 13px;
+}
+
+.entity-chip {
+    -fx-background-color: rgba(13, 11, 16, 0.94);
+    -fx-background-radius: 999;
+    -fx-padding: 6 10 6 10;
+    -fx-text-fill: #f1edf8;
+    -fx-font-size: 12px;
+    -fx-translate-y: -10;
+}
+
+.enemy-node {
+    -fx-cursor: hand;
+}
+
+.enemy-node-selected {
+    -fx-effect: dropshadow(gaussian, rgba(212, 175, 55, 0.60), 24, 0.18, 0, 0);
+}
+
+.enemy-range-indicator {
+    -fx-fill: rgba(107, 63, 160, 0.10);
+    -fx-stroke: rgba(212, 175, 55, 0.20);
+    -fx-stroke-width: 2;
+    -fx-stroke-dash-array: 8 8;
+}
+
+.board-player-label {
+    -fx-text-fill: #fff8eb;
+    -fx-font-size: 28px;
+}
+
+.board-item-label {
+    -fx-text-fill: #fff5df;
+    -fx-font-size: 24px;
+}
+
+.board-door-label {
+    -fx-text-fill: #0d0b10;
+    -fx-font-size: 14px;
+}
+
 .menu-panel,
 .content-card,
 .slot-card {

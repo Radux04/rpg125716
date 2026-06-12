@@ -45,5 +45,7 @@ bin/
 
 saves/
 reports/
+achievements.json
+achievements.xml
 
 .env

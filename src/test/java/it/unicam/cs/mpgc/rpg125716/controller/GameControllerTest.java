@@ -33,7 +33,7 @@ class GameControllerTest {
         XmlSaveRepository repository = new XmlSaveRepository(tempDir);
         SaveService saveService = new SaveService(repository);
         AchievementService achievementService = new AchievementService(
-                new AchievementRepository(tempDir.resolve("achievements.json"))
+                new AchievementRepository(tempDir.resolve("achievements.xml"))
         );
         LoadService loadService = new LoadService(saveService, achievementService);
         GameController gameController = new GameController(saveService, loadService, achievementService);
@@ -70,7 +70,7 @@ class GameControllerTest {
         XmlSaveRepository repository = new XmlSaveRepository(tempDir.resolve("saves"));
         SaveService saveService = new SaveService(repository);
         AchievementService achievementService = new AchievementService(
-                new AchievementRepository(tempDir.resolve("achievements.json"))
+                new AchievementRepository(tempDir.resolve("achievements.xml"))
         );
         LoadService loadService = new LoadService(saveService, achievementService);
         GameController gameController = new GameController(saveService, loadService, achievementService);
@@ -94,7 +94,7 @@ class GameControllerTest {
         XmlSaveRepository repository = new XmlSaveRepository(tempDir.resolve("saves"));
         SaveService saveService = new SaveService(repository);
         AchievementService achievementService = new AchievementService(
-                new AchievementRepository(tempDir.resolve("achievements.json"))
+                new AchievementRepository(tempDir.resolve("achievements.xml"))
         );
         LoadService loadService = new LoadService(saveService, achievementService);
         GameController gameController = new GameController(saveService, loadService, achievementService);
@@ -118,7 +118,7 @@ class GameControllerTest {
         XmlSaveRepository repository = new XmlSaveRepository(tempDir.resolve("saves"));
         SaveService saveService = new SaveService(repository);
         AchievementService achievementService = new AchievementService(
-                new AchievementRepository(tempDir.resolve("achievements.json"))
+                new AchievementRepository(tempDir.resolve("achievements.xml"))
         );
         LoadService loadService = new LoadService(saveService, achievementService);
         GameController gameController = new GameController(saveService, loadService, achievementService);

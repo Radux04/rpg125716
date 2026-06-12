@@ -2,7 +2,9 @@ package it.unicam.cs.mpgc.rpg125716.service;
 
 import it.unicam.cs.mpgc.rpg125716.controller.GameController;
 import it.unicam.cs.mpgc.rpg125716.model.character.ElementType;
+import it.unicam.cs.mpgc.rpg125716.model.enemy.Enemy;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
+import it.unicam.cs.mpgc.rpg125716.model.item.Item;
 import it.unicam.cs.mpgc.rpg125716.model.level.DemoCampaign;
 import it.unicam.cs.mpgc.rpg125716.model.level.DemoLevel;
 import it.unicam.cs.mpgc.rpg125716.model.level.LevelRewardChoice;
@@ -21,6 +23,7 @@ public class GameService {
     private static final int DEFAULT_PLAYER_SPEED = 8;
 
     private final GameController gameController;
+    private final CombatService combatService;
     private boolean currentLevelStarted;
 
     public GameService() {
@@ -28,7 +31,12 @@ public class GameService {
     }
 
     public GameService(GameController gameController) {
+        this(gameController, gameController.createCombatService());
+    }
+
+    public GameService(GameController gameController, CombatService combatService) {
         this.gameController = Objects.requireNonNull(gameController, "gameController cannot be null");
+        this.combatService = Objects.requireNonNull(combatService, "combatService cannot be null");
     }
 
     public CurrentGameState newGame() {
@@ -88,6 +96,7 @@ public class GameService {
         gameController.publishCurrentLevelCompleted();
 
         if (session.getCampaign().hasNextLevel()) {
+            rewardPlayerForLevelAdvance(session.getPlayer());
             session.getCampaign().advanceToNextLevel();
         }
 
@@ -96,14 +105,47 @@ public class GameService {
         return getCurrentGameState();
     }
 
-    public void attuneCurrentPlayerToOriginStone(ElementType elementType) {
+    public CurrentGameState attuneCurrentPlayerToOriginStone(ElementType elementType) {
         gameController.attuneCurrentPlayerToOriginStone(Objects.requireNonNull(elementType, "elementType cannot be null"));
         refreshCurrentSession();
+        return getCurrentGameState();
     }
 
-    public void chooseCurrentLevelReward(LevelRewardChoice rewardChoice) {
+    public CurrentGameState chooseCurrentLevelReward(LevelRewardChoice rewardChoice) {
         gameController.chooseCurrentLevelReward(Objects.requireNonNull(rewardChoice, "rewardChoice cannot be null"));
         refreshCurrentSession();
+        return getCurrentGameState();
+    }
+
+    public CurrentGameState claimCurrentLevelCompletionDrop() {
+        ensureLevelStarted();
+        gameController.claimCurrentLevelCompletionDrop();
+        refreshCurrentSession();
+        return getCurrentGameState();
+    }
+
+    public CombatTurnResult attackCurrentLevelEnemy(Enemy enemy) {
+        ensureLevelStarted();
+        Enemy enemyToAttack = requireAttackableEnemy(enemy);
+        Player player = gameController.requireCurrentSession().getPlayer();
+
+        combatService.resetCombat();
+        CombatResult playerActionResult = combatService.playerAttack(player, enemyToAttack);
+        CombatResult enemyActionResult = null;
+
+        if (enemyToAttack.isAlive() && player.isAlive()) {
+            enemyActionResult = combatService.enemyAttack(enemyToAttack, player);
+        }
+
+        return new CombatTurnResult(getCurrentGameState(), playerActionResult, enemyActionResult);
+    }
+
+    public CombatResult useItem(Item item) {
+        ensureLevelStarted();
+        Player player = gameController.requireCurrentSession().getPlayer();
+
+        combatService.resetCombat();
+        return combatService.useItem(player, Objects.requireNonNull(item, "item cannot be null"));
     }
 
     public List<SaveSlotInfo> listSaveSlots() {
@@ -145,6 +187,33 @@ public class GameService {
                         session.getLoadedAt()
                 )
         );
+    }
+
+    private void rewardPlayerForLevelAdvance(Player player) {
+        Objects.requireNonNull(player, "player cannot be null");
+        player.levelUp();
+    }
+
+    private void ensureLevelStarted() {
+        gameController.requireCurrentSession();
+        if (!currentLevelStarted) {
+            throw new IllegalStateException("the current level has not been started yet");
+        }
+    }
+
+    private Enemy requireAttackableEnemy(Enemy enemy) {
+        Enemy enemyToAttack = Objects.requireNonNull(enemy, "enemy cannot be null");
+        DemoLevel currentLevel = gameController.requireCurrentSession().getCampaign().getCurrentLevel();
+
+        if (!currentLevel.getEnemies().contains(enemyToAttack)) {
+            throw new IllegalArgumentException("enemy does not belong to the current level");
+        }
+
+        if (!enemyToAttack.isAlive()) {
+            throw new IllegalStateException("enemy is already defeated");
+        }
+
+        return enemyToAttack;
     }
 
     private static Player createPlayer(String playerName) {

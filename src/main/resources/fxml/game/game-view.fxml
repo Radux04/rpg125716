@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import java.lang.String?>
+
+<StackPane xmlns="http://javafx.com/javafx/25"
+           xmlns:fx="http://javafx.com/fxml/1"
+           fx:controller="it.unicam.cs.mpgc.rpg125716.frontend.controller.game.GameViewController"
+           fx:id="gameViewRoot">
+    <styleClass>
+        <String fx:value="app-root" />
+        <String fx:value="subscreen-root" />
+        <String fx:value="game-view-root" />
+    </styleClass>
+    <children>
+        <Pane mouseTransparent="true" styleClass="blurred-background" />
+        <Pane mouseTransparent="true" styleClass="subscreen-overlay" />
+        <BorderPane fx:id="gameContentPane" styleClass="subscreen-content">
+            <padding>
+                <Insets bottom="18.0" left="18.0" right="18.0" top="18.0" />
+            </padding>
+            <top>
+                <BorderPane styleClass="game-header-bar">
+                    <left>
+                        <VBox maxWidth="430.0" spacing="10.0">
+                            <styleClass>
+                                <String fx:value="hud-card" />
+                                <String fx:value="game-top-card" />
+                            </styleClass>
+                            <children>
+                                <Label fx:id="playerNameHudLabel" styleClass="hud-main-value" text="Hero" />
+                                <FlowPane hgap="10.0" vgap="10.0">
+                                    <children>
+                                        <Label fx:id="playerLevelHudLabel" text="LV 1">
+                                            <styleClass>
+                                                <String fx:value="status-chip" />
+                                                <String fx:value="status-chip-gold" />
+                                            </styleClass>
+                                        </Label>
+                                        <Label fx:id="playerHpHudLabel" text="HP 60 / 60">
+                                            <styleClass>
+                                                <String fx:value="status-chip" />
+                                                <String fx:value="status-chip-gold" />
+                                            </styleClass>
+                                        </Label>
+                                        <Label fx:id="playerExperienceHudLabel" styleClass="status-chip" text="EXP 0 / 100" />
+                                    </children>
+                                </FlowPane>
+                                <Label fx:id="objectiveLabel"
+                                       maxWidth="394.0"
+                                       minHeight="42.0"
+                                       prefWidth="394.0"
+                                       prefHeight="42.0"
+                                       styleClass="body-label"
+                                       text="Obiettivo"
+                                       textOverrun="CLIP"
+                                       wrapText="true" />
+                                <Label fx:id="playerStatsHudLabel" styleClass="body-label" text="ATK 10  DEF 5  SPD 8" wrapText="true" />
+                                <Label fx:id="playerElementHudLabel" styleClass="muted-label" text="Elemento non scelto" wrapText="true" />
+                                <Label styleClass="muted-label" text="M-Inventario" wrapText="true" />
+                            </children>
+                        </VBox>
+                    </left>
+
+                    <center>
+                        <VBox alignment="CENTER" spacing="6.0" styleClass="game-level-center">
+                            <children>
+                                <Label fx:id="levelSceneTitleLabel" styleClass="section-title" text="Livello" />
+                            </children>
+                        </VBox>
+                    </center>
+
+                    <right>
+                        <VBox alignment="TOP_RIGHT" maxWidth="430.0" prefWidth="430.0" spacing="12.0">
+                            <children>
+                                <Button mnemonicParsing="false"
+                                        onAction="#handleBack"
+                                        text="Torna al Riepilogo">
+                                    <styleClass>
+                                        <String fx:value="menu-button" />
+                                        <String fx:value="secondary-button" />
+                                    </styleClass>
+                                </Button>
+                                <VBox maxWidth="430.0" spacing="10.0">
+                                    <styleClass>
+                                        <String fx:value="hud-card" />
+                                        <String fx:value="game-top-card" />
+                                    </styleClass>
+                                    <children>
+                                        <Label styleClass="card-title" text="Stato Arena" />
+                                        <FlowPane hgap="10.0" vgap="10.0">
+                                            <children>
+                                                <Label fx:id="remainingEnemiesHudLabel" styleClass="status-chip" text="Nemici: 0" />
+                                                <Label fx:id="doorStatusLabel" styleClass="status-chip" text="Porta sigillata" />
+                                            </children>
+                                        </FlowPane>
+                                    </children>
+                                </VBox>
+                                <VBox maxWidth="430.0" spacing="6.0">
+                                    <styleClass>
+                                        <String fx:value="hud-card" />
+                                        <String fx:value="game-top-card" />
+                                    </styleClass>
+                                    <children>
+                                        <Label styleClass="card-title" text="Bersaglio" />
+                                        <Label fx:id="selectedEnemyLabel" text="Nessun bersaglio">
+                                            <styleClass>
+                                                <String fx:value="hud-main-value" />
+                                                <String fx:value="compact-main-value" />
+                                            </styleClass>
+                                        </Label>
+                                        <Label fx:id="selectedEnemyStatsLabel"
+                                               styleClass="body-label"
+                                               text="Seleziona un nemico sulla mappa."
+                                               wrapText="true" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </VBox>
+                    </right>
+                </BorderPane>
+            </top>
+
+            <center>
+                <StackPane prefHeight="664.0" prefWidth="1788.0" styleClass="game-board-frame">
+                    <padding>
+                        <Insets bottom="18.0" left="18.0" right="18.0" top="18.0" />
+                    </padding>
+                    <children>
+                        <Pane fx:id="gameBoardPane" prefHeight="620.0" prefWidth="1720.0" styleClass="game-board" />
+                    </children>
+                </StackPane>
+            </center>
+
+            <bottom>
+                <VBox spacing="8.0">
+                    <children>
+                        <VBox spacing="6.0">
+                            <children>
+                                <VBox prefWidth="1440.0" spacing="6.0">
+                                    <styleClass>
+                                        <String fx:value="hud-card" />
+                                        <String fx:value="bottom-panel-card" />
+                                        <String fx:value="action-bar-card" />
+                                    </styleClass>
+                                    <children>
+                                        <Label styleClass="card-title" text="Azioni" />
+                                        <FlowPane hgap="10.0" vgap="8.0">
+                                            <children>
+                                                <Button fx:id="attackButton"
+                                                        mnemonicParsing="false"
+                                                        onAction="#handleAttackSelectedEnemy"
+                                                        text="Attacca Bersaglio">
+                                                    <styleClass>
+                                                        <String fx:value="menu-button" />
+                                                        <String fx:value="primary-button" />
+                                                        <String fx:value="contextual-action-button" />
+                                                    </styleClass>
+                                                </Button>
+                                                <Button fx:id="usePotionButton"
+                                                        mnemonicParsing="false"
+                                                        onAction="#handleUsePotion"
+                                                        text="Usa Pozione">
+                                                    <styleClass>
+                                                        <String fx:value="menu-button" />
+                                                        <String fx:value="secondary-button" />
+                                                        <String fx:value="contextual-action-button" />
+                                                    </styleClass>
+                                                </Button>
+                                                <Button fx:id="claimDropButton"
+                                                        mnemonicParsing="false"
+                                                        onAction="#handleClaimDrop"
+                                                        text="Raccogli Oggetto">
+                                                    <styleClass>
+                                                        <String fx:value="menu-button" />
+                                                        <String fx:value="secondary-button" />
+                                                        <String fx:value="contextual-action-button" />
+                                                    </styleClass>
+                                                </Button>
+                                                <Button fx:id="advanceDoorButton"
+                                                        mnemonicParsing="false"
+                                                        onAction="#handleAdvanceDoor"
+                                                        text="Attraversa la Porta">
+                                                    <styleClass>
+                                                        <String fx:value="menu-button" />
+                                                        <String fx:value="primary-button" />
+                                                        <String fx:value="contextual-action-button" />
+                                                    </styleClass>
+                                                </Button>
+                                            </children>
+                                        </FlowPane>
+                                        <HBox alignment="CENTER_LEFT" spacing="10.0">
+                                            <children>
+                                                <FlowPane fx:id="elementActionPane" hgap="8.0" vgap="8.0" />
+                                                <FlowPane fx:id="rewardActionPane" hgap="8.0" vgap="8.0" />
+                                            </children>
+                                        </HBox>
+                                    </children>
+                                </VBox>
+                            </children>
+                        </VBox>
+                    </children>
+                </VBox>
+            </bottom>
+        </BorderPane>
+        <StackPane fx:id="inventoryOverlay" managed="false" visible="false">
+            <children>
+                <Pane styleClass="inventory-overlay-backdrop" />
+                <VBox maxWidth="860.0" prefWidth="860.0" spacing="18.0" styleClass="inventory-overlay-card">
+                    <padding>
+                        <Insets bottom="22.0" left="22.0" right="22.0" top="22.0" />
+                    </padding>
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="16.0">
+                            <children>
+                                <VBox spacing="6.0">
+                                    <children>
+                                        <Label styleClass="section-title" text="Inventario" />
+                                        <Label styleClass="body-label"
+                                               text="Gioco in pausa. Premi M o ESC per chiudere l'inventario."
+                                               wrapText="true" />
+                                    </children>
+                                </VBox>
+                                <Region HBox.hgrow="ALWAYS" />
+                                <Button mnemonicParsing="false"
+                                        onAction="#handleCloseInventoryOverlay"
+                                        text="Chiudi">
+                                    <styleClass>
+                                        <String fx:value="menu-button" />
+                                        <String fx:value="secondary-button" />
+                                    </styleClass>
+                                </Button>
+                            </children>
+                        </HBox>
+                        <Label fx:id="inventoryOverlayFeedbackLabel" styleClass="feedback-label" wrapText="true" />
+                        <VBox fx:id="inventoryOverlayListBox" spacing="10.0" />
+                    </children>
+                </VBox>
+            </children>
+        </StackPane>
+    </children>
+</StackPane>

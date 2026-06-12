@@ -67,8 +67,10 @@ public class GameOverviewController {
     @FXML
     private void handleStartLevel() {
         try {
-            currentGameState = gameService.startLevel();
-            sceneNavigator.showGameOverview(currentGameState);
+            if (!currentGameState.isCurrentLevelStarted()) {
+                currentGameState = gameService.startLevel();
+            }
+            sceneNavigator.showGameView(currentGameState);
         } catch (RuntimeException exception) {
             feedbackLabel.setText("Impossibile iniziare il livello: " + exception.getMessage());
         }
@@ -127,8 +129,8 @@ public class GameOverviewController {
         completedLevelsValueLabel.setText(String.valueOf(currentGameState.getCompletedLevels().size()));
         levelFlagsLabel.setText(buildLevelFlags());
 
-        startLevelButton.setText(currentGameState.isCurrentLevelStarted() ? "Livello in Corso" : "Inizia Livello");
-        startLevelButton.setDisable(currentGameState.isCurrentLevelStarted() || currentGameState.isDemoCompleted());
+        startLevelButton.setText(currentGameState.isCurrentLevelStarted() ? "Rientra nel Livello" : "Inizia Livello");
+        startLevelButton.setDisable(currentGameState.isDemoCompleted());
 
         if (initialFeedbackMessage != null && !initialFeedbackMessage.isBlank()) {
             feedbackLabel.setText(initialFeedbackMessage);

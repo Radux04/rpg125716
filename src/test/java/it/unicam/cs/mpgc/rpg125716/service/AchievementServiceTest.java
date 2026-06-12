@@ -28,7 +28,7 @@ class AchievementServiceTest {
     @Test
     void achievementServiceUnlocksAchievementsOnlyOnceAndPersistsThemGlobally() {
         AchievementService achievementService = new AchievementService(
-                new AchievementRepository(tempDir.resolve("achievements.json"))
+                new AchievementRepository(tempDir.resolve("achievements.xml"))
         );
         Player player = new Player("Hero", 60, 10, 5, 8);
 
@@ -48,7 +48,7 @@ class AchievementServiceTest {
     @Test
     void achievementServiceUnlocksBossSlayerAndCollectorFromEvents() {
         AchievementService achievementService = new AchievementService(
-                new AchievementRepository(tempDir.resolve("event-achievements.json"))
+                new AchievementRepository(tempDir.resolve("event-achievements.xml"))
         );
         Player player = new Player("Hero", 60, 10, 5, 8);
 
@@ -70,7 +70,7 @@ class AchievementServiceTest {
     @Test
     void synchronizePlayerAchievementsMergesLocalAndGlobalUnlocks() {
         AchievementService achievementService = new AchievementService(
-                new AchievementRepository(tempDir.resolve("achievements.json"))
+                new AchievementRepository(tempDir.resolve("achievements.xml"))
         );
         Player player = new Player("Hero", 60, 10, 5, 8);
 
