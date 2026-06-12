@@ -8,6 +8,8 @@ import it.unicam.cs.mpgc.rpg125716.frontend.controller.menu.MainMenuController;
 import it.unicam.cs.mpgc.rpg125716.service.CurrentGameState;
 import it.unicam.cs.mpgc.rpg125716.service.GameService;
 import javafx.animation.FadeTransition;
+import javafx.animation.PauseTransition;
+import javafx.animation.SequentialTransition;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -80,7 +82,8 @@ public class SceneNavigator {
     }
 
     public void showDemoCompleted() {
-        show(DEMO_COMPLETED_FXML, null, null);
+        Parent root = loadRoot(DEMO_COMPLETED_FXML, null, null);
+        showWithDemoCompletionTransition(root);
     }
 
     private void show(String fxmlPath, CurrentGameState currentGameState, String feedbackMessage) {
@@ -149,7 +152,12 @@ public class SceneNavigator {
 
     private void showWithLevelTransition(Parent root, String levelTitle, String progressionSummary) {
         StackPane sceneRoot = new StackPane(root);
-        StackPane transitionOverlay = buildLevelTransitionOverlay(levelTitle, progressionSummary);
+        StackPane transitionOverlay = buildTransitionOverlay(
+                "Nuovo Livello",
+                levelTitle,
+                progressionSummary,
+                "Premi qualsiasi tasto per continuare..."
+        );
         sceneRoot.getChildren().add(transitionOverlay);
 
         Scene scene = new Scene(sceneRoot, sceneWidth, sceneHeight);
@@ -159,11 +167,33 @@ public class SceneNavigator {
         playLevelTransition(scene, transitionOverlay);
     }
 
-    private StackPane buildLevelTransitionOverlay(String levelTitle, String progressionSummary) {
-        Label eyebrowLabel = new Label("Nuovo Livello");
+    private void showWithDemoCompletionTransition(Parent root) {
+        StackPane sceneRoot = new StackPane(root);
+        StackPane transitionOverlay = buildTransitionOverlay(
+                "Demo completata",
+                "Forgotten Gate",
+                "Hai sconfitto il suo guardiano.",
+                null
+        );
+        sceneRoot.getChildren().add(transitionOverlay);
+
+        Scene scene = new Scene(sceneRoot, sceneWidth, sceneHeight);
+        scene.getStylesheets().add(stylesheet);
+        stage.setScene(scene);
+
+        playAutomaticTransition(transitionOverlay);
+    }
+
+    private StackPane buildTransitionOverlay(
+            String eyebrowText,
+            String titleText,
+            String summaryText,
+            String continueText
+    ) {
+        Label eyebrowLabel = new Label(eyebrowText);
         eyebrowLabel.getStyleClass().add("level-transition-eyebrow");
 
-        Label titleLabel = new Label(levelTitle);
+        Label titleLabel = new Label(titleText);
         titleLabel.getStyleClass().add("level-transition-title");
         titleLabel.setWrapText(true);
         titleLabel.setMaxWidth(900);
@@ -171,23 +201,26 @@ public class SceneNavigator {
         VBox content = new VBox(14, eyebrowLabel, titleLabel);
         content.setAlignment(Pos.CENTER);
 
-        if (progressionSummary != null && !progressionSummary.isBlank()) {
-            Label summaryLabel = new Label(progressionSummary);
+        if (summaryText != null && !summaryText.isBlank()) {
+            Label summaryLabel = new Label(summaryText);
             summaryLabel.getStyleClass().add("level-transition-summary");
             summaryLabel.setWrapText(true);
             summaryLabel.setMaxWidth(820);
             content.getChildren().add(summaryLabel);
         }
 
-        Label continueLabel = new Label("Premi qualsiasi tasto per continuare...");
-        continueLabel.getStyleClass().add("level-transition-continue");
-
         BorderPane overlayLayout = new BorderPane();
         overlayLayout.setCenter(content);
-        overlayLayout.setBottom(continueLabel);
         BorderPane.setAlignment(content, Pos.CENTER);
-        BorderPane.setAlignment(continueLabel, Pos.BOTTOM_CENTER);
-        BorderPane.setMargin(continueLabel, new Insets(0, 0, 40, 0));
+
+        if (continueText != null && !continueText.isBlank()) {
+            Label continueLabel = new Label(continueText);
+            continueLabel.getStyleClass().add("level-transition-continue");
+            overlayLayout.setBottom(continueLabel);
+            BorderPane.setAlignment(continueLabel, Pos.BOTTOM_CENTER);
+            BorderPane.setMargin(continueLabel, new Insets(0, 0, 40, 0));
+        }
+
         overlayLayout.setOpacity(0);
 
         StackPane overlay = new StackPane(overlayLayout);
@@ -223,6 +256,27 @@ public class SceneNavigator {
                 overlayFadeOut.play();
             }
         });
+    }
+
+    private void playAutomaticTransition(StackPane transitionOverlay) {
+        BorderPane overlayLayout = (BorderPane) transitionOverlay.getUserData();
+
+        FadeTransition contentFadeIn = new FadeTransition(Duration.millis(240), overlayLayout);
+        contentFadeIn.setFromValue(0);
+        contentFadeIn.setToValue(1);
+
+        PauseTransition hold = new PauseTransition(Duration.millis(1100));
+
+        FadeTransition overlayFadeOut = new FadeTransition(Duration.millis(420), transitionOverlay);
+        overlayFadeOut.setFromValue(1);
+        overlayFadeOut.setToValue(0);
+        overlayFadeOut.setOnFinished(event -> {
+            if (transitionOverlay.getParent() instanceof StackPane parent) {
+                parent.getChildren().remove(transitionOverlay);
+            }
+        });
+
+        new SequentialTransition(contentFadeIn, hold, overlayFadeOut).play();
     }
 
     private String resolveStylesheet() {

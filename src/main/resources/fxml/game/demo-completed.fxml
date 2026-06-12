@@ -19,13 +19,13 @@
     <children>
         <Pane mouseTransparent="true" styleClass="blurred-background" />
         <Pane mouseTransparent="true" styleClass="subscreen-overlay" />
-        <VBox alignment="CENTER" maxWidth="760.0" spacing="20.0">
+        <VBox alignment="CENTER" maxWidth="760.0" spacing="20.0" styleClass="demo-completed-panel">
             <padding>
                 <Insets bottom="40.0" left="32.0" right="32.0" top="40.0" />
             </padding>
             <children>
-                <Label styleClass="section-title centered-copy" text="Demo completata!" wrapText="true" />
-                <Label styleClass="body-label centered-copy"
+                <Label styleClass="demo-completed-title centered-copy" text="Demo completata!" wrapText="true" />
+                <Label styleClass="demo-completed-body centered-copy"
                        text="Hai attraversato il Forgotten Gate&#10;e sconfitto il suo guardiano."
                        wrapText="true" />
                 <Label styleClass="level-transition-title" text="To be continued..." wrapText="true" />
