@@ -2,6 +2,7 @@ package it.unicam.cs.mpgc.rpg125716.frontend.controller.game;
 
 import it.unicam.cs.mpgc.rpg125716.frontend.scene.SceneNavigator;
 import it.unicam.cs.mpgc.rpg125716.model.character.ElementType;
+import it.unicam.cs.mpgc.rpg125716.model.character.Player;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.BossEnemy;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Enemy;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Goblin;
@@ -232,12 +233,21 @@ public class GameViewController {
         }
 
         try {
+            Player playerBeforeAdvance = new Player(currentGameState.getPlayer());
             CurrentGameState nextState = gameService.completeCurrentLevel();
             String message = nextState.isDemoCompleted()
                     ? "Hai completato la demo e sconfitto il boss finale."
                     : "Hai attraversato la porta. Il prossimo livello e pronto.";
             stopGameLoop();
-            sceneNavigator.showGameOverview(nextState, message);
+            if (nextState.isDemoCompleted()) {
+                sceneNavigator.showGameOverview(nextState, message);
+            } else {
+                sceneNavigator.showLevelTransitionToGameOverview(
+                        nextState,
+                        message,
+                        buildLevelTransitionProgressionSummary(playerBeforeAdvance, nextState.getPlayer())
+                );
+            }
         } catch (RuntimeException exception) {
             refreshView();
         }
@@ -1256,6 +1266,36 @@ public class GameViewController {
 
     private boolean canUseFromInventoryOverlay(Item item) {
         return item.getType() != ItemType.KEY_ITEM;
+    }
+
+    private String buildLevelTransitionProgressionSummary(Player playerBeforeAdvance, Player playerAfterAdvance) {
+        StringBuilder summaryBuilder = new StringBuilder();
+        appendProgressionLine(
+                summaryBuilder,
+                "Level Up! LV " + playerBeforeAdvance.getLevel() + " -> " + playerAfterAdvance.getLevel()
+        );
+
+        appendDeltaLine(summaryBuilder, "HP", playerAfterAdvance.getMaxHp() - playerBeforeAdvance.getMaxHp());
+        appendDeltaLine(summaryBuilder, "ATK", playerAfterAdvance.getAttack() - playerBeforeAdvance.getAttack());
+        appendDeltaLine(summaryBuilder, "DEF", playerAfterAdvance.getDefense() - playerBeforeAdvance.getDefense());
+        appendDeltaLine(summaryBuilder, "SPD", playerAfterAdvance.getSpeed() - playerBeforeAdvance.getSpeed());
+
+        return summaryBuilder.toString();
+    }
+
+    private void appendDeltaLine(StringBuilder summaryBuilder, String statLabel, int delta) {
+        if (delta <= 0) {
+            return;
+        }
+
+        appendProgressionLine(summaryBuilder, statLabel + " +" + delta);
+    }
+
+    private void appendProgressionLine(StringBuilder summaryBuilder, String line) {
+        if (summaryBuilder.length() > 0) {
+            summaryBuilder.append(System.lineSeparator());
+        }
+        summaryBuilder.append(line);
     }
 
     private String resolveInventoryActionLabel(Item item) {

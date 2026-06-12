@@ -82,8 +82,8 @@ public class DemoCampaign {
     private static DemoLevel createLevel1() {
         return new DemoLevel(
                 1,
-                "Livello 1 - Tutorial",
-                "Un solo nemico introduce il combattimento e lascia la Pietra dell'Origine.",
+                "Livello 1 - Esterno della fortezza",
+                "L'esterno della fortezza introduce il combattimento e custodisce la Pietra dell'Origine.",
                 true,
                 false,
                 true,
@@ -115,8 +115,8 @@ public class DemoCampaign {
 
         return new DemoLevel(
                 2,
-                "Livello 2 - Inseguimento",
-                "Almeno due nemici inseguono il player nel loro raggio di rilevamento e rilasciano XP.",
+                "Livello 2 - Sale del Forgotten Gate",
+                "Le sale del Forgotten Gate ospitano nemici che inseguono il player nel loro raggio di rilevamento.",
                 false,
                 false,
                 false,
@@ -134,7 +134,7 @@ public class DemoCampaign {
 
         return new DemoLevel(
                 3,
-                "Livello 3 - Bossfight",
+                "Livello 3 - Boss Fight",
                 "Il boss finale e piu forte dei nemici normali e conclude la demo con una vittoria.",
                 false,
                 true,
