@@ -63,7 +63,7 @@ public class GameViewController {
     private static final double DOOR_NODE_HEIGHT = 136;
     private static final Point2D PLAYER_START_POSITION = new Point2D(258, (BOARD_HEIGHT / 2) + 6);
     private static final Point2D ITEM_POSITION = new Point2D((BOARD_WIDTH / 2) - 46, BOARD_HEIGHT - 165);
-    private static final Point2D DOOR_POSITION = new Point2D(BOARD_WIDTH - 170, 82);
+    private static final Point2D DOOR_POSITION = new Point2D(BOARD_WIDTH - 170, (TILE_SIZE * 2) - 17);
     private static final double PLAYER_COLLISION_RADIUS = 44;
     private static final double PLAYER_MOVE_SPEED = 180;
     private static final double PLAYER_SPEED_FACTOR = 8;
