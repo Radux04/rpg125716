@@ -998,8 +998,8 @@ public class GameViewController {
             }
 
             ImageView imageView = new ImageView(loadEnemySprite(enemy));
-            double width = enemy instanceof BossEnemy ? 250 : enemy instanceof Slime ? 150 : 170;
-            double height = enemy instanceof BossEnemy ? 250 : enemy instanceof Slime ? 150 : 170;
+            double width = enemy instanceof BossEnemy ? 210 : enemy instanceof Slime ? 120 : 140;
+            double height = enemy instanceof BossEnemy ? 210 : enemy instanceof Slime ? 120 : 140;
             imageView.setFitWidth(width);
             imageView.setFitHeight(height);
             imageView.setPreserveRatio(true);
@@ -1540,12 +1540,12 @@ public class GameViewController {
 
     private double enemyCollisionRadius(Enemy enemy) {
         if (enemy instanceof BossEnemy) {
-            return 72;
+            return 60;
         }
         if (enemy instanceof Slime) {
-            return 44;
+            return 34;
         }
-        return 52;
+        return 40;
     }
 
     private Point2D getInteractiveItemCenter() {
