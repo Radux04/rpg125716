@@ -9,10 +9,11 @@ import java.util.Objects;
 @Getter
 @RequiredArgsConstructor
 public enum AchievementType {
-    FIRST_KILL("first-kill", "Primo sangue", "Sconfiggi il tuo primo nemico."),
-    BOSS_SLAYER("boss-slayer", "Boss Slayer", "Sconfiggi il primo boss."),
+    FIRST_KILL("first-kill", "Primo Sangue", "Sconfiggi il primo nemico."),
+    BOSS_SLAYER("boss-slayer", "Guardiano sconfitto", "Sconfiggi il boss."),
     COLLECTOR("collector", "Collezionista", "Ottieni 10 oggetti."),
-    ORIGIN_STONE("origin-stone", "Pietra dell'Origine", "Ottieni il potere della Pietra dell'Origine.");
+    ORIGIN_STONE("origin-stone", "Portatore della Pietra", "Raccogli la Pietra Elementale."),
+    DEMO_COMPLETED("demo-completed", "Demo completata", "Finisci la demo.");
 
     private final String id;
     private final String title;

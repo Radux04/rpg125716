@@ -6,7 +6,13 @@ import it.unicam.cs.mpgc.rpg125716.model.level.DemoLevel;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-public record LevelCompletedEvent(Player player, int levelNumber, String levelName, LocalDateTime occurredAt) implements GameEvent {
+public record LevelCompletedEvent(
+        Player player,
+        int levelNumber,
+        String levelName,
+        boolean demoCompleted,
+        LocalDateTime occurredAt
+) implements GameEvent {
     public LevelCompletedEvent {
         Objects.requireNonNull(player, "player cannot be null");
         Objects.requireNonNull(levelName, "levelName cannot be null");
@@ -22,6 +28,7 @@ public record LevelCompletedEvent(Player player, int levelNumber, String levelNa
                 player,
                 Objects.requireNonNull(level, "level cannot be null").getNumber(),
                 level.getName(),
+                level.isEndsDemoWithVictory(),
                 LocalDateTime.now()
         );
     }

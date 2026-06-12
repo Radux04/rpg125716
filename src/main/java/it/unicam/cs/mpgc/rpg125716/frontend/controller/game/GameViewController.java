@@ -17,6 +17,7 @@ import it.unicam.cs.mpgc.rpg125716.model.item.Potion;
 import it.unicam.cs.mpgc.rpg125716.model.item.Weapon;
 import it.unicam.cs.mpgc.rpg125716.model.level.DemoLevel;
 import it.unicam.cs.mpgc.rpg125716.model.level.LevelRewardChoice;
+import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 import it.unicam.cs.mpgc.rpg125716.service.CombatResult;
 import it.unicam.cs.mpgc.rpg125716.service.CombatTurnResult;
 import it.unicam.cs.mpgc.rpg125716.service.CurrentGameState;
@@ -125,6 +126,7 @@ public class GameViewController {
     private final EventHandler<KeyEvent> globalKeyPressedHandler = this::handleGlobalKeyPressed;
     private final EventHandler<KeyEvent> globalKeyReleasedHandler = this::handleGlobalKeyReleased;
     private final Set<KeyCode> pressedKeys = EnumSet.noneOf(KeyCode.class);
+    private final Set<AchievementType> acknowledgedAchievements = EnumSet.noneOf(AchievementType.class);
     private final Map<Enemy, Point2D> enemyPositions = new IdentityHashMap<>();
     private final Map<Enemy, EnemyVisual> enemyVisuals = new IdentityHashMap<>();
     private final Map<Class<? extends Enemy>, Image> enemySpriteCache = new HashMap<>();
@@ -290,6 +292,8 @@ public class GameViewController {
 
             if (currentLevel.isEndsDemoWithVictory() && currentLevel.getCompletionDrop() instanceof BossSword) {
                 gameService.completeCurrentLevel();
+                currentGameState = gameService.getCurrentGameState();
+                announceNewlyUnlockedAchievements();
                 stopGameLoop();
                 sceneNavigator.showDemoCompleted();
                 return;
@@ -335,6 +339,8 @@ public class GameViewController {
     }
 
     private void initializeRuntimeState() {
+        acknowledgedAchievements.clear();
+        acknowledgedAchievements.addAll(currentGameState.getPlayer().getUnlockedAchievements());
         arenaObstacles.clear();
         arenaObstacles.addAll(buildArenaObstacles());
         playerPosition = resolveArenaPosition(PLAYER_START_POSITION, PLAYER_COLLISION_RADIUS);
@@ -362,6 +368,7 @@ public class GameViewController {
 
     private void refreshView() {
         currentGameState = gameService.getCurrentGameState();
+        announceNewlyUnlockedAchievements();
         synchronizeEnemyPositionsWithCurrentLevel();
         ensureSelectedEnemy();
         updateElementChoiceOverlay();
@@ -1787,6 +1794,7 @@ public class GameViewController {
             boolean applyWaterKnockback
     ) {
         currentGameState = turnResult.getCurrentGameState();
+        announceNewlyUnlockedAchievements();
         Player player = currentGameState.getPlayer();
 
         if (countsTowardStoneCharge && turnResult.getPlayerActionResult().getDamage() > 0) {
@@ -1813,6 +1821,12 @@ public class GameViewController {
         synchronizeEnemyPositionsWithCurrentLevel();
         ensureSelectedEnemy();
         updateRewardChoiceOverlay();
+    }
+
+    private void announceNewlyUnlockedAchievements() {
+        currentGameState.getPlayer().getUnlockedAchievements().stream()
+                .filter(acknowledgedAchievements::add)
+                .forEach(sceneNavigator::showAchievementUnlocked);
     }
 
     private void pushEnemyAwayFromPlayer(Enemy enemy, double distance) {

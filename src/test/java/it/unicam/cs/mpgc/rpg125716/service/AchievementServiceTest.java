@@ -2,10 +2,13 @@ package it.unicam.cs.mpgc.rpg125716.service;
 
 import it.unicam.cs.mpgc.rpg125716.event.EnemyDefeatedEvent;
 import it.unicam.cs.mpgc.rpg125716.event.ItemCollectedEvent;
+import it.unicam.cs.mpgc.rpg125716.event.LevelCompletedEvent;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.BossEnemy;
 import it.unicam.cs.mpgc.rpg125716.model.enemy.Slime;
+import it.unicam.cs.mpgc.rpg125716.model.item.OriginStone;
 import it.unicam.cs.mpgc.rpg125716.model.item.Potion;
+import it.unicam.cs.mpgc.rpg125716.model.level.DemoCampaign;
 import it.unicam.cs.mpgc.rpg125716.model.progression.Achievement;
 import it.unicam.cs.mpgc.rpg125716.model.progression.AchievementType;
 import it.unicam.cs.mpgc.rpg125716.persistence.AchievementRepository;
@@ -84,5 +87,24 @@ class AchievementServiceTest {
         List<Achievement> unlockedAchievements = achievementService.getUnlockedAchievements();
         assertEquals(2, unlockedAchievements.size());
         assertFalse(achievementService.getAllAchievements().isEmpty());
+    }
+
+    @Test
+    void originStoneCollectionAndDemoCompletionUnlockTheRequestedAchievements() {
+        AchievementService achievementService = new AchievementService(
+                new AchievementRepository(tempDir.resolve("demo-achievements.xml"))
+        );
+        Player player = new Player("Hero", 60, 10, 5, 8);
+
+        player.collectItem(new OriginStone());
+        achievementService.onGameEvent(
+                new ItemCollectedEvent(player, new OriginStone(), player.getInventory().getTotalItemCount())
+        );
+        achievementService.onGameEvent(new LevelCompletedEvent(player, new DemoCampaign().getLevel(3)));
+
+        assertTrue(player.hasAchievement(AchievementType.ORIGIN_STONE));
+        assertTrue(player.hasAchievement(AchievementType.DEMO_COMPLETED));
+        assertTrue(achievementService.isUnlocked(AchievementType.ORIGIN_STONE));
+        assertTrue(achievementService.isUnlocked(AchievementType.DEMO_COMPLETED));
     }
 }

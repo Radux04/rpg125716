@@ -1,8 +1,6 @@
 package it.unicam.cs.mpgc.rpg125716.controller;
 
-import it.unicam.cs.mpgc.rpg125716.model.character.ElementType;
 import it.unicam.cs.mpgc.rpg125716.model.character.Player;
-import it.unicam.cs.mpgc.rpg125716.model.item.OriginStone;
 import it.unicam.cs.mpgc.rpg125716.model.item.Potion;
 import it.unicam.cs.mpgc.rpg125716.model.level.DemoCampaign;
 import it.unicam.cs.mpgc.rpg125716.model.level.LevelRewardChoice;
@@ -66,7 +64,7 @@ class GameControllerTest {
     }
 
     @Test
-    void attuningToTheOriginStoneUnlocksTheGlobalAchievement() {
+    void claimingTheOriginStoneUnlocksTheGlobalAchievement() {
         XmlSaveRepository repository = new XmlSaveRepository(tempDir.resolve("saves"));
         SaveService saveService = new SaveService(repository);
         AchievementService achievementService = new AchievementService(
@@ -75,15 +73,15 @@ class GameControllerTest {
         LoadService loadService = new LoadService(saveService, achievementService);
         GameController gameController = new GameController(saveService, loadService, achievementService);
 
-        Player player = new Player("Hero", 60, 10, 5, 8);
-        player.collectItem(new OriginStone());
+        DemoCampaign campaign = new DemoCampaign();
+        campaign.getCurrentLevel().getEnemies().forEach(enemy -> enemy.setHp(0));
         saveService.saveGame(
-                GameStateLog.fromCurrentGame(1, player, new DemoCampaign(), List.of()),
+                GameStateLog.fromCurrentGame(1, new Player("Hero", 60, 10, 5, 8), campaign, List.of()),
                 SaveSlot.SLOT_1
         );
 
         gameController.loadGame(SaveSlot.SLOT_1).orElseThrow();
-        gameController.attuneCurrentPlayerToOriginStone(ElementType.WIND);
+        gameController.claimCurrentLevelCompletionDrop();
 
         assertTrue(gameController.requireCurrentSession().getPlayer().hasAchievement(AchievementType.ORIGIN_STONE));
         assertTrue(achievementService.isUnlocked(AchievementType.ORIGIN_STONE));
