@@ -42,6 +42,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.transform.Scale;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -59,6 +60,9 @@ import java.util.Set;
 public class GameViewController {
     private static final double BOARD_WIDTH = 1600;
     private static final double BOARD_HEIGHT = 540;
+    private static final double BOARD_DISPLAY_SCALE = 0.80d;
+    private static final double DISPLAY_BOARD_WIDTH = BOARD_WIDTH * BOARD_DISPLAY_SCALE;
+    private static final double DISPLAY_BOARD_HEIGHT = BOARD_HEIGHT * BOARD_DISPLAY_SCALE;
     private static final double TILE_SIZE = 102;
     private static final double PLAYER_NODE_SIZE = 116;
     private static final double ITEM_NODE_SIZE = 102;
@@ -132,6 +136,7 @@ public class GameViewController {
     private Point2D playerPosition = PLAYER_START_POSITION;
     private Scene boundScene;
     private AnimationTimer gameLoop;
+    private Pane boardContentPane;
     private StackPane playerNode;
     private StackPane doorNode;
     private Rectangle doorPortal;
@@ -205,7 +210,10 @@ public class GameViewController {
 
     @FXML
     private void initialize() {
-        gameBoardPane.setPrefSize(BOARD_WIDTH, BOARD_HEIGHT);
+        gameBoardPane.setPrefSize(DISPLAY_BOARD_WIDTH, DISPLAY_BOARD_HEIGHT);
+        gameBoardPane.setMinSize(DISPLAY_BOARD_WIDTH, DISPLAY_BOARD_HEIGHT);
+        gameBoardPane.setMaxSize(DISPLAY_BOARD_WIDTH, DISPLAY_BOARD_HEIGHT);
+        gameBoardPane.setClip(new Rectangle(DISPLAY_BOARD_WIDTH, DISPLAY_BOARD_HEIGHT));
         inventoryOverlay.setManaged(false);
         inventoryOverlay.setVisible(false);
         rewardChoiceOverlay.setManaged(false);
@@ -301,13 +309,18 @@ public class GameViewController {
 
     private void initializeBoardScene() {
         gameBoardPane.getChildren().clear();
+        boardContentPane = new Pane();
+        boardContentPane.setManaged(false);
+        boardContentPane.setPrefSize(BOARD_WIDTH, BOARD_HEIGHT);
+        boardContentPane.getTransforms().setAll(new Scale(BOARD_DISPLAY_SCALE, BOARD_DISPLAY_SCALE, 0, 0));
+        gameBoardPane.getChildren().add(boardContentPane);
         renderBoardTiles();
         renderArenaStructures();
         specialEffectsPane = buildSpecialEffectsPane();
         doorNode = buildDoorNode();
         itemNode = buildItemNode();
         playerNode = buildPlayerNode();
-        gameBoardPane.getChildren().addAll(specialEffectsPane, doorNode, itemNode, playerNode);
+        boardContentPane.getChildren().addAll(specialEffectsPane, doorNode, itemNode, playerNode);
         rebuildEnemyVisuals();
         renderDynamicScene();
     }
@@ -721,7 +734,7 @@ public class GameViewController {
                 tile.setFill(resolveBoardTileColor(boardPalette, row, column, rows, columns));
                 tile.setLayoutX(column * TILE_SIZE);
                 tile.setLayoutY(row * TILE_SIZE);
-                gameBoardPane.getChildren().add(tile);
+                boardContentPane.getChildren().add(tile);
             }
         }
 
@@ -731,7 +744,7 @@ public class GameViewController {
         border.setStrokeWidth(10);
         border.setArcWidth(32);
         border.setArcHeight(32);
-        gameBoardPane.getChildren().add(border);
+        boardContentPane.getChildren().add(border);
     }
 
     private BoardPalette resolveBoardPalette() {
@@ -761,7 +774,7 @@ public class GameViewController {
 
     private void renderArenaStructures() {
         for (ArenaObstacle obstacle : arenaObstacles) {
-            gameBoardPane.getChildren().add(buildArenaObstacleNode(obstacle));
+            boardContentPane.getChildren().add(buildArenaObstacleNode(obstacle));
         }
     }
 
@@ -1064,9 +1077,9 @@ public class GameViewController {
     private void rebuildEnemyVisuals() {
         enemyVisuals.values().forEach(enemyVisual -> {
             if (enemyVisual.rangeIndicator() != null) {
-                gameBoardPane.getChildren().remove(enemyVisual.rangeIndicator());
+                boardContentPane.getChildren().remove(enemyVisual.rangeIndicator());
             }
-            gameBoardPane.getChildren().remove(enemyVisual.node());
+            boardContentPane.getChildren().remove(enemyVisual.node());
         });
         enemyVisuals.clear();
 
@@ -1079,12 +1092,12 @@ public class GameViewController {
             if (enemy.getDetectionRange() > 0) {
                 rangeIndicator = new Circle();
                 rangeIndicator.getStyleClass().add("enemy-range-indicator");
-                gameBoardPane.getChildren().add(rangeIndicator);
+                boardContentPane.getChildren().add(rangeIndicator);
             }
 
             ImageView imageView = new ImageView(loadEnemySprite(enemy));
-            double width = enemy instanceof BossEnemy ? 210 : enemy instanceof Slime ? 120 : 140;
-            double height = enemy instanceof BossEnemy ? 210 : enemy instanceof Slime ? 120 : 140;
+            double width = enemy instanceof BossEnemy ? 184 : enemy instanceof Slime ? 104 : 122;
+            double height = enemy instanceof BossEnemy ? 184 : enemy instanceof Slime ? 104 : 122;
             imageView.setFitWidth(width);
             imageView.setFitHeight(height);
             imageView.setPreserveRatio(true);
@@ -1098,7 +1111,7 @@ public class GameViewController {
             enemyNode.setPrefSize(width, height);
             enemyNode.setOnMouseClicked(event -> handleEnemySelected(enemy));
 
-            gameBoardPane.getChildren().add(enemyNode);
+            boardContentPane.getChildren().add(enemyNode);
             enemyVisuals.put(enemy, new EnemyVisual(enemyNode, hpChip, rangeIndicator, width, height));
         }
     }

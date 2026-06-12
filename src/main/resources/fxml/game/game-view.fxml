@@ -147,12 +147,12 @@
             </top>
 
             <center>
-                <StackPane prefHeight="584.0" prefWidth="1668.0" styleClass="game-board-frame">
+                <StackPane prefHeight="476.0" prefWidth="1316.0" styleClass="game-board-frame">
                     <padding>
                         <Insets bottom="18.0" left="18.0" right="18.0" top="18.0" />
                     </padding>
                     <children>
-                        <Pane fx:id="gameBoardPane" prefHeight="540.0" prefWidth="1600.0" styleClass="game-board" />
+                        <Pane fx:id="gameBoardPane" prefHeight="432.0" prefWidth="1280.0" styleClass="game-board" />
                     </children>
                 </StackPane>
             </center>
