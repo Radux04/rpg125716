@@ -91,4 +91,16 @@ class CombatServiceTest {
         assertFalse(result.isCombatFinished());
         assertEquals("Slime attacca Hero", result.getMessage());
     }
+
+    @Test
+    void fireSpecialAttackDealsABitMoreDamageThanTheBaseAttack() {
+        Player player = new Player("Hero", 60, 10, 5, 8);
+        Slime slime = new Slime();
+        CombatService combatService = new CombatService(new GameEventDispatcher());
+
+        CombatResult result = combatService.playerAttack(player, slime, 4);
+
+        assertEquals(13, result.getDamage());
+        assertEquals(7, slime.getHp());
+    }
 }

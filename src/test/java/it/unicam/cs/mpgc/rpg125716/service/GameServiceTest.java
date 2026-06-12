@@ -135,6 +135,8 @@ class GameServiceTest {
         assertEquals(currentHpBeforeAdvance + 10, advancedState.getPlayer().getCurrentHp());
         assertEquals(attackBeforeAdvance + 2, advancedState.getPlayer().getAttack());
         assertEquals(defenseBeforeAdvance + 1, advancedState.getPlayer().getDefense());
+        assertTrue(advancedState.getPlayer().isStoneSuperPowerUnlocked());
+        assertTrue(advancedState.getPlayer().isStoneSuperPowerReady());
     }
 
     @Test

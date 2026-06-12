@@ -250,7 +250,8 @@
 }
 
 .inventory-overlay-card,
-.inventory-entry-card {
+.inventory-entry-card,
+.reward-choice-card {
     -fx-background-color: rgba(21, 18, 29, 0.97);
     -fx-background-radius: 24;
     -fx-border-color: rgba(175, 168, 186, 0.20);
@@ -260,6 +261,15 @@
 
 .inventory-overlay-card {
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.40), 42, 0.18, 0, 18);
+}
+
+.reward-choice-card {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.40), 42, 0.18, 0, 18);
+}
+
+.reward-option-button {
+    -fx-min-width: 0;
+    -fx-pref-width: 320;
 }
 
 .level-transition-overlay {

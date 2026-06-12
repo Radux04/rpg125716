@@ -4,6 +4,7 @@ import it.unicam.cs.mpgc.rpg125716.model.item.OriginStone;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -36,7 +37,32 @@ class PlayerProgressionTest {
         player.attuneToOriginStone(ElementType.WIND);
 
         assertEquals(ElementType.WIND, player.getElementType());
-        assertEquals(28, player.getDodgeChancePercentage());
+        assertEquals(45, player.getDodgeChancePercentage());
         assertTrue(player.getDodgeChancePercentage() > baseDodgeChance);
+    }
+
+    @Test
+    void stoneSuperPowerUnlocksAtLevelThreeAndRechargesAfterEnoughHits() {
+        Player player = new Player("Hero", 60, 10, 5, 8);
+        player.collectItem(new OriginStone());
+        player.attuneToOriginStone(ElementType.FIRE);
+
+        player.levelUp();
+        assertFalse(player.isStoneSuperPowerUnlocked());
+
+        player.levelUp();
+        assertTrue(player.isStoneSuperPowerUnlocked());
+        assertTrue(player.isStoneSuperPowerReady());
+
+        player.consumeStoneSuperPower();
+        assertFalse(player.isStoneSuperPowerReady());
+
+        for (int hitIndex = 0; hitIndex < 5; hitIndex++) {
+            player.registerStonePowerHitDealt();
+        }
+
+        assertTrue(player.isStoneSuperPowerReady());
+        assertEquals(0, player.getStonePowerHitsDealtCharge());
+        assertEquals(0, player.getStonePowerHitsTakenCharge());
     }
 }
