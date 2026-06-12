@@ -14,6 +14,9 @@ import java.util.Set;
 
 @Data
 public class Player {
+    private static final double DODGE_CHANCE_PER_SPEED_POINT = 0.01d;
+    private static final double MAX_DODGE_CHANCE = 0.35d;
+
     private String name;
     private int level;
     private int experience;
@@ -133,6 +136,16 @@ public class Player {
     @JsonIgnore
     public boolean isAlive() {
         return currentHp > 0;
+    }
+
+    @JsonIgnore
+    public double getDodgeChance() {
+        return Math.min(MAX_DODGE_CHANCE, Math.max(0d, speed * DODGE_CHANCE_PER_SPEED_POINT));
+    }
+
+    @JsonIgnore
+    public int getDodgeChancePercentage() {
+        return (int) Math.round(getDodgeChance() * 100);
     }
 
     public void collectItem(Item item) {

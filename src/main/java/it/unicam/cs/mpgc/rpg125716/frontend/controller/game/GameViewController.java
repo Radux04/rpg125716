@@ -63,6 +63,7 @@ public class GameViewController {
     private static final double ITEM_NODE_SIZE = 102;
     private static final double DOOR_NODE_WIDTH = 104;
     private static final double DOOR_NODE_HEIGHT = 136;
+    private static final String ORIGIN_STONE_DROP_SPRITE_PATH = "/images/items/origin-stone-drop.png";
     private static final Point2D PLAYER_START_POSITION = new Point2D(258, (BOARD_HEIGHT / 2) + 6);
     private static final Point2D ITEM_POSITION = new Point2D((BOARD_WIDTH / 2) - 46, BOARD_HEIGHT - 165);
     private static final Point2D DOOR_POSITION = new Point2D(BOARD_WIDTH - 170, (TILE_SIZE * 2) - 17);
@@ -119,6 +120,7 @@ public class GameViewController {
     private Circle itemHalo;
     private Circle itemCore;
     private Label itemNodeLabel;
+    private ImageView itemSpriteView;
 
     @FXML
     private StackPane gameViewRoot;
@@ -603,6 +605,7 @@ public class GameViewController {
                 "ATK " + currentGameState.getPlayer().getAttack()
                         + "  DEF " + currentGameState.getPlayer().getDefense()
                         + "  SPD " + currentGameState.getPlayer().getSpeed()
+                        + "  SCHIVA " + currentGameState.getPlayer().getDodgeChancePercentage() + "%"
         );
         contextualHintLabel.setText(buildContextualHintText());
         playerElementHudLabel.setText(
@@ -966,10 +969,16 @@ public class GameViewController {
         itemCore = new Circle(26, Color.web("#1b1623"));
         itemCore.setStroke(DROP_COLOR);
         itemCore.setStrokeWidth(3);
+        itemSpriteView = new ImageView(loadOriginStoneDropSprite());
+        itemSpriteView.setFitWidth(82);
+        itemSpriteView.setFitHeight(82);
+        itemSpriteView.setPreserveRatio(true);
+        itemSpriteView.setVisible(false);
+        itemSpriteView.setManaged(false);
         itemNodeLabel = new Label("+");
         itemNodeLabel.getStyleClass().add("board-item-label");
 
-        builtItemNode.getChildren().addAll(itemHalo, itemCore, itemNodeLabel);
+        builtItemNode.getChildren().addAll(itemHalo, itemCore, itemSpriteView, itemNodeLabel);
         return builtItemNode;
     }
 
@@ -1051,7 +1060,24 @@ public class GameViewController {
         itemNode.setManaged(true);
         itemHalo.setFill(color);
         itemCore.setStroke(color);
-        itemNodeLabel.setText(symbol);
+        if (shouldRenderOriginStoneDropSprite()) {
+            itemCore.setVisible(false);
+            itemCore.setManaged(false);
+            itemSpriteView.setVisible(true);
+            itemSpriteView.setManaged(true);
+            itemNodeLabel.setVisible(false);
+            itemNodeLabel.setManaged(false);
+            itemHalo.setOpacity(0.34);
+        } else {
+            itemCore.setVisible(true);
+            itemCore.setManaged(true);
+            itemSpriteView.setVisible(false);
+            itemSpriteView.setManaged(false);
+            itemNodeLabel.setVisible(true);
+            itemNodeLabel.setManaged(true);
+            itemNodeLabel.setText(symbol);
+            itemHalo.setOpacity(0.24);
+        }
     }
 
     private void renderPlayerNodeState() {
@@ -1278,6 +1304,11 @@ public class GameViewController {
                 .filter(Potion.class::isInstance)
                 .map(Potion.class::cast)
                 .findFirst();
+    }
+
+    private boolean shouldRenderOriginStoneDropSprite() {
+        return hasPendingCompletionDrop()
+                && currentGameState.getCurrentLevel().getCompletionDrop() instanceof OriginStone;
     }
 
     private String buildObjectiveText() {
@@ -1597,6 +1628,15 @@ public class GameViewController {
         Image enemySprite = new Image(stream);
         enemySpriteCache.put(enemyType, enemySprite);
         return enemySprite;
+    }
+
+    private Image loadOriginStoneDropSprite() {
+        InputStream stream = GameViewController.class.getResourceAsStream(ORIGIN_STONE_DROP_SPRITE_PATH);
+        if (stream == null) {
+            throw new IllegalStateException("Sprite resource not found: " + ORIGIN_STONE_DROP_SPRITE_PATH);
+        }
+
+        return new Image(stream);
     }
 
     private record BoardPalette(Color primaryTileColor, Color secondaryTileColor, Color borderColor) {
